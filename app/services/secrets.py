@@ -8,6 +8,7 @@ secret holding JSON such as::
       "jira_email": "...",
       "jira_api_token": "...",
       "slack_bot_token": "...",
+      "github_token": "...",
       "databricks_client_id": "...",
       "databricks_client_secret": "..."
     }
@@ -36,6 +37,8 @@ _SECRET_TO_ENV: dict[str, str] = {
     "JIRA_API_TOKEN": "JIRA_API_TOKEN",
     "slack_bot_token": "SLACK_BOT_TOKEN",
     "SLACK_BOT_TOKEN": "SLACK_BOT_TOKEN",
+    "github_token": "GITHUB_TOKEN",
+    "GITHUB_TOKEN": "GITHUB_TOKEN",
     "databricks_token": "DATABRICKS_TOKEN",
     "databricks_client_id": "DATABRICKS_CLIENT_ID",
     "databricks_client_secret": "DATABRICKS_CLIENT_SECRET",

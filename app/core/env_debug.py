@@ -10,14 +10,18 @@ from app.config import Settings
 _TRACKED_ENV_KEYS = (
     "SECRETS_MANAGER_SECRET_ARN",
     "SECRETS_MANAGER_SECRET_NAME",
+    "AGENTCORE_HARNESS_ARN",
     "JIRA_BASE_URL",
+    "JIRA_CLOUD_ID",
     "JIRA_EMAIL",
     "JIRA_API_TOKEN",
     "JIRA_PROJECT_KEY",
+    "JIRA_ISSUE_TYPE",
     "ENABLE_JIRA",
     "ENABLE_SLACK",
     "SLACK_CHANNEL",
     "SLACK_BOT_TOKEN",
+    "GITHUB_TOKEN",
 )
 
 
@@ -50,6 +54,12 @@ def print_loaded_config(
         print("SECRETS_MANAGER: (not configured — using .env / process env)")
 
     print(f"AWS_REGION: {settings.aws_region}")
+    print(f"BEDROCK_MODEL_ID: {settings.bedrock_model_id}")
+    harness = settings.agentcore_harness_arn
+    print(
+        f"AGENTCORE_HARNESS_ARN: {_mask(harness) if harness else '(not set — Converse fallback)'}"
+        f" [{_env_source('AGENTCORE_HARNESS_ARN')}]"
+    )
     print(f"ENABLE_JIRA: {settings.enable_jira} [{_env_source('ENABLE_JIRA')}]")
     print(f"JIRA_BASE_URL: {settings.jira_base_url or '(not set)'} [{_env_source('JIRA_BASE_URL')}]")
     if settings.jira_cloud_id:
@@ -66,6 +76,7 @@ def print_loaded_config(
     print(f"ENABLE_SLACK: {settings.enable_slack} [{_env_source('ENABLE_SLACK')}]")
     print(f"SLACK_CHANNEL: {settings.slack_channel} [{_env_source('SLACK_CHANNEL')}]")
     print(f"SLACK_BOT_TOKEN: {_mask(settings.slack_bot_token)} [{_env_source('SLACK_BOT_TOKEN')}]")
+    print(f"GITHUB_TOKEN: {_mask(settings.github_token)} [{_env_source('GITHUB_TOKEN')}]")
 
     stale = [key for key in _TRACKED_ENV_KEYS if key in os.environ]
     if stale:

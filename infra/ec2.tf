@@ -13,13 +13,15 @@ resource "aws_instance" "app" {
     env_file_content = templatefile("${path.module}/templates/deployguard.env.tpl", {
       aws_region                  = var.aws_region
       s3_bucket                   = aws_s3_bucket.incidents.bucket
-      bedrock_agent_id            = var.bedrock_agent_id
-      bedrock_agent_alias_id      = var.bedrock_agent_alias_id
+      bedrock_model_id            = var.bedrock_model_id
+      agentcore_harness_arn       = var.agentcore_harness_arn
       secrets_manager_secret_name = aws_secretsmanager_secret.app.name
       enable_jira                 = var.enable_jira
       enable_slack                = var.enable_slack
       jira_base_url               = var.jira_base_url
+      jira_cloud_id               = var.jira_cloud_id
       jira_project_key            = var.jira_project_key
+      jira_issue_type             = var.jira_issue_type
       slack_channel               = var.slack_channel
       daily_investigation_cap     = var.daily_investigation_cap
       database_secret_name        = aws_secretsmanager_secret.database.name
