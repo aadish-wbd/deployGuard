@@ -9,12 +9,13 @@ from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from app.api import dashboard, health, incidents, investigate
+from app.api import dashboard, databricks, health, incidents, investigate
 from app.config import get_settings
 from app.core.cache import TTLCache
 from app.core.logging_config import configure_logging, get_logger
 from app.core.rate_limit import DailyCap
 from app.services.bedrock import BedrockAgentClient
+from app.services.databricks import DatabricksClient
 from app.services.jira import JiraClient
 from app.services.postgres_store import PostgresIncidentStore
 from app.services.s3_store import S3IncidentStore
@@ -39,11 +40,16 @@ async def lifespan(app: FastAPI):
         get_settings.cache_clear()
         settings = get_settings()
 
-    app.state.bedrock_client = BedrockAgentClient(settings)
     app.state.jira_client = JiraClient(settings)
     app.state.slack_client = SlackClient(settings)
+    app.state.bedrock_client = BedrockAgentClient(
+        settings,
+        jira_client=app.state.jira_client,
+        slack_client=app.state.slack_client,
+    )
     app.state.s3_store = S3IncidentStore(settings)
     app.state.postgres_store = PostgresIncidentStore(settings) if settings.postgres_enabled else None
+    app.state.databricks_client = DatabricksClient(settings)
     app.state.dedup_cache = TTLCache(settings.dedup_cache_ttl_seconds)
     app.state.daily_cap = DailyCap(settings.daily_investigation_cap)
 
@@ -64,6 +70,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="DeployGuard", version="1.0.0", lifespan=lifespan)
 app.include_router(health.router)
 app.include_router(investigate.router)
+app.include_router(databricks.router)
 app.include_router(incidents.router)
 app.include_router(dashboard.router)
 

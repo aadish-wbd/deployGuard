@@ -11,6 +11,7 @@ from fastapi import Request
 from app.config import Settings, get_settings
 from app.core.cache import TTLCache
 from app.services.bedrock import BedrockAgentClient
+from app.services.databricks import DatabricksClient
 from app.services.jira import JiraClient
 from app.services.postgres_store import PostgresIncidentStore
 from app.services.s3_store import S3IncidentStore
@@ -43,3 +44,7 @@ def get_dedup_cache(request: Request) -> TTLCache:
 
 def get_postgres_store(request: Request) -> Optional[PostgresIncidentStore]:
     return getattr(request.app.state, "postgres_store", None)
+
+
+def get_databricks_client(request: Request) -> DatabricksClient:
+    return request.app.state.databricks_client

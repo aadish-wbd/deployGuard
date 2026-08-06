@@ -6,7 +6,9 @@ SECRETS_MANAGER_SECRET_NAME to a secret holding a JSON blob such as:
     {
       "jira_email": "...",
       "jira_api_token": "...",
-      "slack_bot_token": "..."
+      "slack_bot_token": "...",
+      "databricks_client_id": "...",
+      "databricks_client_secret": "..."
     }
 
 Locally (no AWS creds / secret name unset), these env vars are read
@@ -27,6 +29,9 @@ _SECRET_TO_ENV = {
     "jira_email": "JIRA_EMAIL",
     "jira_api_token": "JIRA_API_TOKEN",
     "slack_bot_token": "SLACK_BOT_TOKEN",
+    "databricks_token": "DATABRICKS_TOKEN",
+    "databricks_client_id": "DATABRICKS_CLIENT_ID",
+    "databricks_client_secret": "DATABRICKS_CLIENT_SECRET",
 }
 
 _DATABASE_SECRET_TO_ENV = {

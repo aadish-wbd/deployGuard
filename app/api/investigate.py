@@ -75,6 +75,30 @@ async def investigate(
     cache: TTLCache = Depends(get_dedup_cache),
 ) -> InvestigateResponse:
     payload = await _parse_request(request, settings)
+    return await execute_investigation(
+        payload,
+        request,
+        settings,
+        bedrock_client,
+        jira_client,
+        slack_client,
+        s3_store,
+        postgres_store,
+        cache,
+    )
+
+
+async def execute_investigation(
+    payload: InvestigateRequest,
+    request: Request,
+    settings: Settings,
+    bedrock_client: BedrockAgentClient,
+    jira_client: JiraClient,
+    slack_client: SlackClient,
+    s3_store: S3IncidentStore,
+    postgres_store: Optional[PostgresIncidentStore],
+    cache: TTLCache,
+) -> InvestigateResponse:
 
     deploy_sha = payload.context.deploy_sha if payload.context else None
     cache_key = TTLCache.make_key(payload.error_message, payload.service, deploy_sha)

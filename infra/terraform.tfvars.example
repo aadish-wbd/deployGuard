@@ -27,7 +27,9 @@ slack_channel    = "#deployguard-alerts"
 
 # Update real values in Secrets Manager console after apply, or override here:
 # secrets_placeholder = {
-#   jira_email      = "you@company.com"
-#   jira_api_token  = "..."
-#   slack_bot_token = "xoxb-..."
+#   jira_email               = "you@company.com"
+#   jira_api_token           = "..."
+#   slack_bot_token          = "xoxb-..."
+#   databricks_client_id     = "your-service-principal-client-id"
+#   databricks_client_secret = "your-service-principal-oauth-secret"
 # }

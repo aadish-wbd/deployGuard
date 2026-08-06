@@ -67,6 +67,10 @@ gitignored.
 | `SLACK_BOT_TOKEN` | *(empty)* | |
 | `SLACK_CHANNEL` | `#deployguard-alerts` | |
 | `SLACK_ONCALL_MENTIONS` | `[]` | JSON list of Slack user IDs |
+| `ENABLE_DATABRICKS` | `true` | |
+| `DATABRICKS_HOST` | *(empty)* | e.g. `https://<workspace>.cloud.databricks.com` |
+| `DATABRICKS_CLIENT_ID` / `DATABRICKS_CLIENT_SECRET` | *(empty)* | OAuth M2M (preferred in AWS) |
+| `DATABRICKS_TOKEN` | *(empty)* | PAT fallback for local dev |
 | `DAILY_INVESTIGATION_CAP` | *(unset)* | Optional cost guardrail (NFR-10) |
 
 For a first local run with no JIRA/Slack setup yet, set:

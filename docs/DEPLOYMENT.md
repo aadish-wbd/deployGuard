@@ -89,7 +89,9 @@ aws secretsmanager put-secret-value \
   --secret-string '{
     "jira_email": "you@company.com",
     "jira_api_token": "your-jira-token",
-    "slack_bot_token": "xoxb-your-slack-token"
+    "slack_bot_token": "xoxb-your-slack-token",
+    "databricks_client_id": "your-service-principal-client-id",
+    "databricks_client_secret": "your-service-principal-oauth-secret"
   }'
 ```
 
@@ -206,7 +208,7 @@ git push main
 | `SECRETS_MANAGER_SECRET_NAME` | created secret |
 | `JIRA_BASE_URL`, `JIRA_PROJECT_KEY` | terraform vars |
 | `SLACK_CHANNEL` | terraform var |
-| `JIRA_EMAIL`, `JIRA_API_TOKEN`, `SLACK_BOT_TOKEN` | Secrets Manager at startup |
+| `JIRA_EMAIL`, `JIRA_API_TOKEN`, `SLACK_BOT_TOKEN`, `DATABRICKS_CLIENT_ID`, `DATABRICKS_CLIENT_SECRET` | Secrets Manager at startup |
 
 See `/etc/deployguard.env` on the instance.
 
