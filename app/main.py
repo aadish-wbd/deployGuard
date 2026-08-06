@@ -6,7 +6,7 @@ See RUNBOOK.md for full setup and demo instructions.
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -85,7 +85,16 @@ app.include_router(dashboard.router)
 
 
 @app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request, exc: RequestValidationError) -> JSONResponse:
+async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    if "databricks/webhook" in request.url.path:
+        try:
+            body = (await request.body()).decode("utf-8", errors="replace")
+        except Exception:
+            body = "(unreadable)"
+        logger.warning(
+            "databricks_webhook_validation_failed",
+            extra={"body": body[:4000], "errors": exc.errors()},
+        )
     return JSONResponse(status_code=400, content={"detail": exc.errors()})
 
 

@@ -194,7 +194,7 @@ class DatabricksWebhookRun(BaseModel):
 
 class DatabricksWebhookJob(BaseModel):
     job_id: str
-    name: str
+    name: str = "unknown"
 
     @field_validator("job_id", mode="before")
     @classmethod
@@ -215,9 +215,21 @@ class DatabricksWebhookPayload(BaseModel):
     job: DatabricksWebhookJob
     task: Optional[DatabricksWebhookTask] = None
 
+    @field_validator("workspace_id", mode="before")
+    @classmethod
+    def _coerce_workspace_id(cls, value: object) -> object:
+        if value is None:
+            return value
+        return str(value)
+
     def extract_run_id(self) -> str:
-        """Run ID to pass to POST /api/v1/databricks/runs/context."""
-        return self.run.parent_run_id or self.run.run_id
+        """Run ID for POST /api/v1/databricks/runs/context.
+
+        Job-level webhooks set run.run_id to the job run. Task-level webhooks set
+        run.run_id to the failed task run and parent_run_id to the enclosing job run.
+        Export/context must use the task run_id when task is present.
+        """
+        return self.run.run_id
 
     def to_context_request(self) -> DatabricksRunContextRequest:
         return DatabricksRunContextRequest(
