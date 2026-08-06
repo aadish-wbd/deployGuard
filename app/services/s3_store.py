@@ -54,6 +54,7 @@ class S3IncidentStore:
         return f"s3://{bucket}/{prefix}/"
 
     def _append_to_index(self, record: IncidentRecord) -> None:
+        ctx = record.input.context
         summary = IncidentSummary(
             investigation_id=record.investigation_id,
             timestamp=record.timestamp,
@@ -63,6 +64,11 @@ class S3IncidentStore:
             root_cause=record.root_cause,
             confidence=record.confidence,
             jira_ticket=record.actions.jira_ticket,
+            jira_url=record.actions.jira_url,
+            rca_summary=record.rca_summary,
+            severity=ctx.severity if ctx else None,
+            triggered_by=record.input.triggered_by,
+            slack_sent=record.actions.slack_sent,
         )
         bucket = self._settings.s3_bucket
         key = self._settings.s3_index_key

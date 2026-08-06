@@ -27,6 +27,13 @@ sudo -u "$APP_USER" python3 -m venv "$APP_DIR/.venv"
 sudo -u "$APP_USER" "$APP_DIR/.venv/bin/pip" install --upgrade pip
 sudo -u "$APP_USER" "$APP_DIR/.venv/bin/pip" install -r "$APP_DIR/requirements.txt"
 
+# --- Dashboard UI (Node.js build) ---
+dnf install -y nodejs npm
+cd "$APP_DIR/frontend"
+sudo -u "$APP_USER" npm ci 2>/dev/null || sudo -u "$APP_USER" npm install
+sudo -u "$APP_USER" npm run build
+cd "$APP_DIR"
+
 # --- Environment file (non-secrets; secrets loaded from Secrets Manager at runtime) ---
 cat > /etc/deployguard.env << 'ENVEOF'
 ${env_file_content}

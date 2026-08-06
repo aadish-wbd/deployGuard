@@ -4,10 +4,12 @@ Run with: uvicorn app.main:app --host 0.0.0.0 --port 8000
 See RUNBOOK.md for full setup and demo instructions.
 """
 from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.api import dashboard, databricks, health, incidents, investigate
 from app.config import get_settings
@@ -85,3 +87,32 @@ app.include_router(dashboard.router)
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc: RequestValidationError) -> JSONResponse:
     return JSONResponse(status_code=400, content={"detail": exc.errors()})
+
+
+_FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+
+
+def _mount_dashboard_ui() -> None:
+    if not _FRONTEND_DIST.is_dir():
+        logger.warning("frontend_dist_missing", extra={"path": str(_FRONTEND_DIST)})
+        return
+
+    assets_dir = _FRONTEND_DIST / "assets"
+    if assets_dir.is_dir():
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="dashboard-assets")
+
+    @app.get("/", include_in_schema=False)
+    async def dashboard_root() -> FileResponse:
+        return FileResponse(_FRONTEND_DIST / "index.html")
+
+    @app.get("/{spa_path:path}", include_in_schema=False)
+    async def dashboard_spa(spa_path: str) -> FileResponse:
+        if spa_path.startswith(("api/", "docs", "redoc", "openapi.json")):
+            raise HTTPException(status_code=404)
+        candidate = _FRONTEND_DIST / spa_path
+        if candidate.is_file():
+            return FileResponse(candidate)
+        return FileResponse(_FRONTEND_DIST / "index.html")
+
+
+_mount_dashboard_ui()

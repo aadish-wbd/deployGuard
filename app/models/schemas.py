@@ -83,6 +83,9 @@ class HealthResponse(BaseModel):
     detail: Optional[str] = None
 
 
+WorkflowStatus = Literal["open", "in_progress", "resolved", "closed"]
+
+
 class IncidentSummary(BaseModel):
     investigation_id: str
     timestamp: datetime
@@ -92,6 +95,12 @@ class IncidentSummary(BaseModel):
     root_cause: Optional[str] = None
     confidence: Optional[float] = None
     jira_ticket: Optional[str] = None
+    jira_url: Optional[str] = None
+    rca_summary: Optional[str] = None
+    severity: Optional[Severity] = None
+    workflow_status: WorkflowStatus = "open"
+    triggered_by: Optional[TriggeredBy] = None
+    slack_sent: bool = False
 
 
 class DashboardStatsResponse(BaseModel):

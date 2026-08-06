@@ -241,7 +241,13 @@ class PostgresIncidentStore:
                 investigation_status::text AS status,
                 root_cause,
                 confidence,
-                jira_ticket
+                jira_ticket,
+                jira_url,
+                rca_summary,
+                severity::text AS severity,
+                workflow_status::text AS workflow_status,
+                triggered_by::text AS triggered_by,
+                slack_sent
             FROM incidents
             WHERE {' AND '.join(filters)}
             ORDER BY occurred_at DESC
@@ -264,6 +270,12 @@ class PostgresIncidentStore:
                 root_cause=row["root_cause"],
                 confidence=float(row["confidence"]) if row["confidence"] is not None else None,
                 jira_ticket=row["jira_ticket"],
+                jira_url=row["jira_url"],
+                rca_summary=row["rca_summary"],
+                severity=row["severity"],
+                workflow_status=row["workflow_status"] or "open",
+                triggered_by=row["triggered_by"],
+                slack_sent=bool(row["slack_sent"]),
             )
             for row in page_rows
         ]

@@ -132,11 +132,14 @@ curl -X POST "$HOST/api/v1/investigate" \
 
 On first `terraform apply`, EC2 **user_data** script:
 
-1. Installs Python 3.11, git, CloudWatch Agent
+1. Installs Python 3, Node.js, git, CloudWatch Agent
 2. Clones `git_repo_url` @ `git_branch` → `/opt/deployguard`
 3. Creates venv, `pip install -r requirements.txt`
-4. Writes `/etc/deployguard.env` (Bedrock ID, S3 bucket, secret name)
-5. Starts `deployguard` systemd service (`uvicorn app.main:app :8000`)
+4. Builds the dashboard SPA (`frontend/` → `frontend/dist/`)
+5. Writes `/etc/deployguard.env` (Bedrock ID, S3 bucket, secret name)
+6. Starts `deployguard` systemd service (`uvicorn app.main:app :8000`)
+
+The ALB serves the dashboard at `/` and the API at `/api/v1/*`.
 
 ### Subsequent deploys (after code changes)
 
@@ -152,6 +155,7 @@ This runs on the instance via SSM:
 
 - `git pull origin main`
 - `pip install -r requirements.txt`
+- `npm install && npm run build` in `frontend/`
 - `systemctl restart deployguard`
 - local `curl /health`
 
