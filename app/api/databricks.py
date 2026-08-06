@@ -47,6 +47,8 @@ from app.services.slack import SlackClient
 logger = get_logger(__name__)
 router = APIRouter(prefix="/api/v1/databricks")
 
+DATABRICKS_SERVICE = "Databricks"
+
 
 def _fetch_run_context(
     payload: DatabricksRunContextRequest,
@@ -128,7 +130,7 @@ async def _execute_databricks_investigation(
     context_request = DatabricksRunContextRequest(run_id=payload.run_id, job_id=payload.job_id)
     return await _context_to_investigation(
         context_request,
-        service=payload.service,
+        service=DATABRICKS_SERVICE,
         environment=payload.environment,
         request=request,
         settings=settings,
@@ -154,7 +156,7 @@ async def _run_webhook_pipeline(request: Request, webhook: DatabricksWebhookPayl
     try:
         response = await _context_to_investigation(
             context_request,
-            service=webhook.job.name,
+            service=DATABRICKS_SERVICE,
             environment=settings.databricks_default_environment,
             request=request,
             settings=settings,
@@ -199,7 +201,7 @@ async def databricks_job_webhook(
 
     run_id = payload.extract_run_id()
     background_tasks.add_task(_run_webhook_pipeline, request, payload)
-    logger.info("databricks_webhook_accepted", extra={"run_id": run_id, "service": payload.job.name})
+    logger.info("databricks_webhook_accepted", extra={"run_id": run_id, "job_name": payload.job.name})
     return DatabricksWebhookResponse(
         status="accepted",
         run_id=run_id,

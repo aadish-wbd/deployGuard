@@ -39,7 +39,6 @@ DATABRICKS_CONTEXT_PAYLOAD = {"run_id": "123456789"}
 
 DATABRICKS_INVESTIGATE_PAYLOAD = {
     "run_id": "123456789",
-    "service": "databricks-etl-job",
     "environment": "production",
 }
 
@@ -89,14 +88,40 @@ def test_databricks_webhook_ignores_non_failure_events(client, fakes):
     assert len(fakes["bedrock"].invocations) == 0
 
 
-def test_databricks_webhook_uses_parent_run_id_for_task_failures(client, fakes):
+def test_databricks_webhook_accepts_numeric_workspace_id(client, fakes):
+    fake_db = FakeDatabricksClient()
+    client.app.state.databricks_client = fake_db
+    payload = {
+        **DATABRICKS_WEBHOOK_FAILURE,
+        "workspace_id": 12345,
+    }
+
+    response = client.post("/api/v1/databricks/webhook", json=payload)
+    assert response.status_code == 202
+    assert response.json()["status"] == "accepted"
+
+
+def test_databricks_webhook_accepts_missing_job_name(client, fakes):
+    fake_db = FakeDatabricksClient()
+    client.app.state.databricks_client = fake_db
+    payload = {
+        **DATABRICKS_WEBHOOK_FAILURE,
+        "job": {"job_id": "516892700102118"},
+    }
+
+    response = client.post("/api/v1/databricks/webhook", json=payload)
+    assert response.status_code == 202
+    assert response.json()["status"] == "accepted"
+
+
+def test_databricks_webhook_uses_task_run_id_for_task_failures(client, fakes):
     fake_db = FakeDatabricksClient()
     client.app.state.databricks_client = fake_db
 
     response = client.post("/api/v1/databricks/webhook", json=DATABRICKS_WEBHOOK_TASK_FAILURE)
     assert response.status_code == 202
-    assert response.json()["run_id"] == "123456789"
-    assert fake_db.calls[0] == ("get_failure_context", "123456789")
+    assert response.json()["run_id"] == "999"
+    assert fake_db.calls[0] == ("get_failure_context", "999")
 
 
 def test_databricks_automated_investigate_happy_path(client, fakes):

@@ -9,7 +9,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Dict, List, Literal, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.core.limits import (
     MAX_ERROR_MESSAGE_CHARS,
@@ -53,6 +53,22 @@ class BedrockRcaOutput(BaseModel):
     evidence: List[str] = Field(default_factory=list, max_length=5)
     rca_summary: str = Field(..., max_length=500)
     suggested_fix: str = Field(default="", max_length=300)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _truncate_overlong_strings(cls, data: object) -> object:
+        """Bedrock sometimes exceeds char limits — trim instead of failing the investigation."""
+        if not isinstance(data, dict):
+            return data
+        limits = {"root_cause": 200, "rca_summary": 500, "suggested_fix": 300}
+        for key, max_len in limits.items():
+            value = data.get(key)
+            if isinstance(value, str) and len(value) > max_len:
+                data[key] = value[: max_len - 3] + "..."
+        evidence = data.get("evidence")
+        if isinstance(evidence, list):
+            data["evidence"] = [item[:497] + "..." if isinstance(item, str) and len(item) > 500 else item for item in evidence[:5]]
+        return data
 
 
 class ActionsTaken(BaseModel):
@@ -134,7 +150,7 @@ class DatabricksInvestigateRequest(BaseModel):
     """Automated Databricks flow: fetch run context then invoke DeployGuard."""
 
     run_id: str = Field(..., min_length=1, max_length=64)
-    service: str = Field(..., min_length=1, max_length=128)
+    service: str = Field(default="Databricks", min_length=1, max_length=128)
     environment: str = Field(..., min_length=1, max_length=32)
     job_id: Optional[str] = Field(default=None, max_length=64)
     task_name: Optional[str] = Field(default=None, max_length=128)
@@ -194,7 +210,7 @@ class DatabricksWebhookRun(BaseModel):
 
 class DatabricksWebhookJob(BaseModel):
     job_id: str
-    name: str
+    name: str = "unknown"
 
     @field_validator("job_id", mode="before")
     @classmethod
@@ -215,9 +231,21 @@ class DatabricksWebhookPayload(BaseModel):
     job: DatabricksWebhookJob
     task: Optional[DatabricksWebhookTask] = None
 
+    @field_validator("workspace_id", mode="before")
+    @classmethod
+    def _coerce_workspace_id(cls, value: object) -> object:
+        if value is None:
+            return value
+        return str(value)
+
     def extract_run_id(self) -> str:
-        """Run ID to pass to POST /api/v1/databricks/runs/context."""
-        return self.run.parent_run_id or self.run.run_id
+        """Run ID for POST /api/v1/databricks/runs/context.
+
+        Job-level webhooks set run.run_id to the job run. Task-level webhooks set
+        run.run_id to the failed task run and parent_run_id to the enclosing job run.
+        Export/context must use the task run_id when task is present.
+        """
+        return self.run.run_id
 
     def to_context_request(self) -> DatabricksRunContextRequest:
         return DatabricksRunContextRequest(
