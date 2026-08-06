@@ -89,7 +89,7 @@ class Settings(BaseSettings):
     max_stack_trace_chars: int = MAX_STACK_TRACE_CHARS
     max_log_snippet_chars: int = MAX_LOG_SNIPPET_CHARS
     max_request_body_bytes: int = MAX_REQUEST_BODY_BYTES
-    max_input_tokens_estimate: int = 2000
+    max_input_tokens_estimate: int = 4000
     max_output_tokens_estimate: int = 800
 
     # --- Caching / dedup (NFR-5) ---
