@@ -98,8 +98,15 @@ class IncidentListResponse(BaseModel):
     next_page_token: Optional[str] = None
 
 
+class DatabricksRunContextRequest(BaseModel):
+    """Fetch failure context from a Databricks job run (step 1 of 2)."""
+
+    run_id: str = Field(..., min_length=1, max_length=64)
+    job_id: Optional[str] = Field(default=None, max_length=64)
+
+
 class DatabricksInvestigateRequest(BaseModel):
-    """Minimal payload for Databricks-triggered investigations (FR-6)."""
+    """Automated Databricks flow: fetch run context then invoke DeployGuard."""
 
     run_id: str = Field(..., min_length=1, max_length=64)
     service: str = Field(..., min_length=1, max_length=128)
@@ -107,3 +114,42 @@ class DatabricksInvestigateRequest(BaseModel):
     job_id: Optional[str] = Field(default=None, max_length=64)
     task_name: Optional[str] = Field(default=None, max_length=128)
     severity: Optional[Severity] = None
+
+
+class DatabricksRunContextResponse(BaseModel):
+    """Failure details extracted from a Databricks run export.
+
+    Pass to POST /api/v1/investigate via to_investigate_request() or map fields manually.
+    """
+
+    run_id: str
+    job_id: Optional[str] = None
+    error_message: str
+    stack_trace: Optional[str] = None
+    log_snippet: Optional[str] = None
+    task_name: Optional[str] = None
+    notebook_name: Optional[str] = None
+    notebook_context: Optional[str] = None
+
+    def to_investigate_request(
+        self,
+        *,
+        service: str,
+        environment: str,
+        severity: Optional[Severity] = None,
+    ) -> InvestigateRequest:
+        return InvestigateRequest(
+            error_message=self.error_message,
+            stack_trace=self.stack_trace,
+            service=service,
+            environment=environment,
+            context=InvestigateContext(
+                job_id=self.job_id,
+                run_id=self.run_id,
+                task_name=self.task_name,
+                log_snippet=self.log_snippet,
+                severity=severity,
+                notebook_context=self.notebook_context,
+            ),
+            triggered_by="databricks",
+        )
