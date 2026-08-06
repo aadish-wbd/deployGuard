@@ -39,7 +39,6 @@ DATABRICKS_CONTEXT_PAYLOAD = {"run_id": "123456789"}
 
 DATABRICKS_INVESTIGATE_PAYLOAD = {
     "run_id": "123456789",
-    "service": "databricks-etl-job",
     "environment": "production",
 }
 

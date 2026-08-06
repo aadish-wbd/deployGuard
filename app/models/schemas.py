@@ -134,7 +134,7 @@ class DatabricksInvestigateRequest(BaseModel):
     """Automated Databricks flow: fetch run context then invoke DeployGuard."""
 
     run_id: str = Field(..., min_length=1, max_length=64)
-    service: str = Field(..., min_length=1, max_length=128)
+    service: str = Field(default="Databricks", min_length=1, max_length=128)
     environment: str = Field(..., min_length=1, max_length=32)
     job_id: Optional[str] = Field(default=None, max_length=64)
     task_name: Optional[str] = Field(default=None, max_length=128)

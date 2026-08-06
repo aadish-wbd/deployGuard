@@ -257,42 +257,19 @@ def _truncate_cell_source(block: str, max_chars: int) -> str:
 
 
 def format_notebook_for_agent(model: dict, failed: dict) -> str:
-    """Render notebook cells (up to failure) with line numbers for the Bedrock agent."""
+    """Render only the failed notebook cell with line numbers for the Bedrock agent."""
     commands = sorted(model.get("commands", []), key=lambda c: c.get("position", 0))
     failed_position = failed.get("position", 0)
-    relevant = [cmd for cmd in commands if cmd.get("position", 0) <= failed_position]
-
-    blocks: List[str] = []
-    failed_idx = 0
-    for i, cmd in enumerate(relevant, 1):
-        is_failed = cmd.get("position") == failed_position and cmd.get("state") == "error"
-        if is_failed:
-            failed_idx = i - 1
-        blocks.append(_format_cell_block(i, cmd, is_failed=is_failed))
+    cell_num = sum(1 for cmd in commands if cmd.get("position", 0) <= failed_position)
 
     header = f"notebook: {model.get('name', 'exported_notebook')}"
     budget = MAX_NOTEBOOK_CONTEXT_CHARS - len(header) - 1
 
-    failed_block = blocks[failed_idx]
+    failed_block = _format_cell_block(cell_num, failed, is_failed=True)
     if len(failed_block) > budget:
-        body = _truncate_cell_source(failed_block, budget)
-        return f"{header}\n{body}"
+        failed_block = _truncate_cell_source(failed_block, budget)
 
-    selected = [failed_block]
-    used = len(failed_block)
-    for block in reversed(blocks[:failed_idx]):
-        extra = len(block) + 2
-        if used + extra > budget:
-            break
-        selected.insert(0, block)
-        used += extra
-
-    body_parts: List[str] = []
-    if len(selected) < failed_idx + 1:
-        body_parts.append("... earlier cells omitted ...")
-    body_parts.extend(selected)
-    body = "\n\n".join(body_parts)
-    return _truncate(f"{header}\n{body}", MAX_NOTEBOOK_CONTEXT_CHARS)
+    return _truncate(f"{header}\n{failed_block}", MAX_NOTEBOOK_CONTEXT_CHARS)
 
 
 def _collect_stderr_lines(cmd: dict) -> List[str]:
