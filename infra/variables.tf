@@ -41,20 +41,26 @@ variable "vpc_cidr" {
 }
 
 variable "bedrock_agent_id" {
-  description = "Bedrock Agent ID (create agent + KBs in console first)"
+  description = "Bedrock Agent ID (Terraform IAM only; app uses BEDROCK_MODEL_ID + AGENTCORE_HARNESS_ARN)"
   type        = string
 }
 
 variable "bedrock_agent_alias_id" {
-  description = "Bedrock Agent alias ID"
+  description = "Bedrock Agent alias ID (Terraform IAM only)"
   type        = string
   default     = "TSTALIASID"
 }
 
 variable "bedrock_model_id" {
-  description = "Bedrock Converse model ID or inference profile (Converse fallback when no harness ARN)"
+  description = "Bedrock Converse model ID or inference profile (fallback when no harness ARN)"
   type        = string
   default     = "us.anthropic.claude-sonnet-4-20250514-v1:0"
+}
+
+variable "agentcore_harness_arn" {
+  description = "AgentCore Harness ARN for JIRA/Slack/GitHub tool orchestration (empty = Converse only)"
+  type        = string
+  default     = ""
 }
 
 variable "git_repo_url" {
@@ -90,13 +96,25 @@ variable "jira_base_url" {
 variable "jira_project_key" {
   description = "Default JIRA project key"
   type        = string
-  default     = "OPS"
+  default     = "KAN"
+}
+
+variable "jira_cloud_id" {
+  description = "JIRA Cloud ID (required for scoped ATCTT tokens; optional for classic ATATT tokens)"
+  type        = string
+  default     = ""
+}
+
+variable "jira_issue_type" {
+  description = "Default JIRA issue type when creating tickets"
+  type        = string
+  default     = "Task"
 }
 
 variable "slack_channel" {
   description = "Default Slack channel"
   type        = string
-  default     = "#deployguard-alerts"
+  default     = "#hackathon"
 }
 
 variable "daily_investigation_cap" {
@@ -142,6 +160,7 @@ variable "secrets_placeholder" {
     jira_email               = "replace-me@example.com"
     jira_api_token           = "replace-me"
     slack_bot_token          = "replace-me"
+    github_token             = "replace-me"
     databricks_client_id     = "replace-me"
     databricks_client_secret = "replace-me"
   }

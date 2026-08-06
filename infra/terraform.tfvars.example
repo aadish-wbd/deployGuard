@@ -5,6 +5,7 @@ environment            = "dev"
 bedrock_agent_id       = "YOUR_BEDROCK_AGENT_ID"
 bedrock_agent_alias_id = "TSTALIASID"
 bedrock_model_id       = "us.anthropic.claude-sonnet-4-20250514-v1:0"
+agentcore_harness_arn  = "arn:aws:bedrock-agentcore:us-east-1:657246005217:harness/DeployGuard-Yl3XVxONZV"
 
 # Restrict in production — your office/VPN CIDR
 allowed_cidr_blocks = ["0.0.0.0/0"]
@@ -14,9 +15,11 @@ git_branch   = "main"
 
 enable_jira = true
 enable_slack = true
-jira_base_url    = "https://yourteam.atlassian.net"
-jira_project_key = "OPS"
-slack_channel    = "#deployguard-alerts"
+jira_base_url    = "https://saikiran-44306429.atlassian.net"
+jira_cloud_id    = "d753fdd1-6314-4b7a-b78d-58e0a982afc7"
+jira_project_key = "KAN"
+jira_issue_type  = "Task"
+slack_channel    = "#hackathon"
 
 # Aurora — smallest/cheapest instance (default db.t4g.medium, ~$50/mo us-east-1)
 # aurora_instance_class  = "db.t4g.medium"
@@ -26,11 +29,12 @@ slack_channel    = "#deployguard-alerts"
 # Optional SSH key (SSM deploy works without it)
 # key_name = "your-keypair"
 
-# Update real values in Secrets Manager console after apply, or override here:
+# Secrets only — update in Secrets Manager console after apply, or override here:
 # secrets_placeholder = {
 #   jira_email               = "you@company.com"
 #   jira_api_token           = "..."
 #   slack_bot_token          = "xoxb-..."
+#   github_token             = "ghp_..."
 #   databricks_client_id     = "your-service-principal-client-id"
 #   databricks_client_secret = "your-service-principal-oauth-secret"
 # }

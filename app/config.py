@@ -48,6 +48,9 @@ class Settings(BaseSettings):
     secrets_manager_secret_name: Optional[str] = None
     database_secret_name: Optional[str] = None
 
+    # --- GitHub (optional — AgentCore github_search tool) ---
+    github_token: str = ""
+
     # --- PostgreSQL (dashboard store) ---
     pghost: Optional[str] = None
     pgport: int = 5432
@@ -61,7 +64,7 @@ class Settings(BaseSettings):
     jira_cloud_id: str = ""
     jira_email: str = ""
     jira_api_token: str = ""
-    jira_project_key: str = "OPS"
+    jira_project_key: str = "KAN"
     jira_issue_type: str = "Task"
     jira_set_priority: bool = True
     jira_default_assignee: Optional[str] = None
@@ -70,7 +73,7 @@ class Settings(BaseSettings):
     # --- Slack ---
     enable_slack: bool = True
     slack_bot_token: str = ""
-    slack_channel: str = "#deployguard-alerts"
+    slack_channel: str = "#hackathon"
     slack_oncall_mentions: List[str] = Field(default_factory=list)
 
     # --- Databricks ---
