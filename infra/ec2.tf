@@ -25,6 +25,9 @@ resource "aws_instance" "app" {
       jira_project_key            = var.jira_project_key
       jira_issue_type             = var.jira_issue_type
       slack_channel               = var.slack_channel
+      enable_databricks           = var.enable_databricks
+      databricks_host             = var.databricks_host
+      databricks_default_environment = var.databricks_default_environment
       daily_investigation_cap     = var.daily_investigation_cap
       database_secret_name        = aws_secretsmanager_secret.database.name
       db_host                     = aws_rds_cluster.incidents.endpoint
