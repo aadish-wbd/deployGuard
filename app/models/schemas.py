@@ -9,7 +9,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Dict, List, Literal, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.core.limits import (
     MAX_ERROR_MESSAGE_CHARS,
@@ -53,6 +53,22 @@ class BedrockRcaOutput(BaseModel):
     evidence: List[str] = Field(default_factory=list, max_length=5)
     rca_summary: str = Field(..., max_length=500)
     suggested_fix: str = Field(default="", max_length=300)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _truncate_overlong_strings(cls, data: object) -> object:
+        """Bedrock sometimes exceeds char limits — trim instead of failing the investigation."""
+        if not isinstance(data, dict):
+            return data
+        limits = {"root_cause": 200, "rca_summary": 500, "suggested_fix": 300}
+        for key, max_len in limits.items():
+            value = data.get(key)
+            if isinstance(value, str) and len(value) > max_len:
+                data[key] = value[: max_len - 3] + "..."
+        evidence = data.get("evidence")
+        if isinstance(evidence, list):
+            data["evidence"] = [item[:497] + "..." if isinstance(item, str) and len(item) > 500 else item for item in evidence[:5]]
+        return data
 
 
 class ActionsTaken(BaseModel):
