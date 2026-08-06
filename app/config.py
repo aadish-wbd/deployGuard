@@ -82,6 +82,7 @@ class Settings(BaseSettings):
     databricks_token: str = ""
     databricks_client_id: str = ""
     databricks_client_secret: str = ""
+    databricks_default_environment: str = "production"
 
     # --- Payload / cost guardrails (NFR-10, payload limits) ---
     max_error_message_chars: int = MAX_ERROR_MESSAGE_CHARS
