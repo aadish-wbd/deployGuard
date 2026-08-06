@@ -4,6 +4,8 @@ Endpoints:
   POST /api/v1/databricks/runs/context  — fetch failure context only (manual / debug)
   POST /api/v1/databricks/investigate   — automated: context -> investigate -> DeployGuard
 """
+from __future__ import annotations
+
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request

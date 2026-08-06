@@ -12,11 +12,12 @@ from fastapi.responses import JSONResponse
 from app.api import dashboard, databricks, health, incidents, investigate
 from app.config import get_settings
 from app.core.cache import TTLCache
+from app.core.env_debug import print_loaded_config
 from app.core.logging_config import configure_logging, get_logger
 from app.core.rate_limit import DailyCap
 from app.services.bedrock import BedrockAgentClient
 from app.services.databricks import DatabricksClient
-from app.services.jira import JiraClient
+from app.services.jira import JiraClient, validate_jira_config
 from app.services.postgres_store import PostgresIncidentStore
 from app.services.s3_store import S3IncidentStore
 from app.services.secrets import load_database_secret_into_env, load_secrets_into_env
@@ -30,8 +31,11 @@ logger = get_logger(__name__)
 async def lifespan(app: FastAPI):
     settings = get_settings()
 
-    if settings.secrets_manager_secret_name:
-        load_secrets_into_env(settings.secrets_manager_secret_name, settings.aws_region)
+    secret_id = settings.secrets_manager_secret_arn or settings.secrets_manager_secret_name
+    secrets_loaded = False
+    if secret_id:
+        loaded = load_secrets_into_env(secret_id, settings.aws_region)
+        secrets_loaded = bool(loaded)
         get_settings.cache_clear()
         settings = get_settings()
 
@@ -39,6 +43,9 @@ async def lifespan(app: FastAPI):
         load_database_secret_into_env(settings.database_secret_name, settings.aws_region)
         get_settings.cache_clear()
         settings = get_settings()
+
+    print_loaded_config(settings, secrets_loaded=secrets_loaded, secret_id=secret_id)
+    validate_jira_config(settings)
 
     app.state.jira_client = JiraClient(settings)
     app.state.slack_client = SlackClient(settings)

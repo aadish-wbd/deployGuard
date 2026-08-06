@@ -43,7 +43,8 @@ class Settings(BaseSettings):
     s3_bucket: str = "deployguard-incidents"
     s3_index_key: str = "index/incidents.jsonl"
 
-    # --- Secrets Manager ---
+    # --- Secrets Manager (name or ARN; ARN takes precedence when both are set) ---
+    secrets_manager_secret_arn: Optional[str] = None
     secrets_manager_secret_name: Optional[str] = None
     database_secret_name: Optional[str] = None
 
@@ -57,9 +58,12 @@ class Settings(BaseSettings):
     # --- JIRA ---
     enable_jira: bool = True
     jira_base_url: str = ""
+    jira_cloud_id: str = ""
     jira_email: str = ""
     jira_api_token: str = ""
     jira_project_key: str = "OPS"
+    jira_issue_type: str = "Task"
+    jira_set_priority: bool = True
     jira_default_assignee: Optional[str] = None
     jira_default_watchers: List[str] = Field(default_factory=list)
 
