@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 from app.core.limits import (
     MAX_ERROR_MESSAGE_CHARS,
     MAX_LOG_SNIPPET_CHARS,
+    MAX_NOTEBOOK_CONTEXT_CHARS,
     MAX_STACK_TRACE_CHARS,
 )
 
@@ -31,6 +32,7 @@ class InvestigateContext(BaseModel):
     run_id: Optional[str] = None
     task_name: Optional[str] = None
     severity: Optional[Severity] = None
+    notebook_context: Optional[str] = Field(default=None, max_length=MAX_NOTEBOOK_CONTEXT_CHARS)
 
 
 class InvestigateRequest(BaseModel):
@@ -94,3 +96,14 @@ class IncidentSummary(BaseModel):
 class IncidentListResponse(BaseModel):
     items: List[IncidentSummary]
     next_page_token: Optional[str] = None
+
+
+class DatabricksInvestigateRequest(BaseModel):
+    """Minimal payload for Databricks-triggered investigations (FR-6)."""
+
+    run_id: str = Field(..., min_length=1, max_length=64)
+    service: str = Field(..., min_length=1, max_length=128)
+    environment: str = Field(..., min_length=1, max_length=32)
+    job_id: Optional[str] = Field(default=None, max_length=64)
+    task_name: Optional[str] = Field(default=None, max_length=128)
+    severity: Optional[Severity] = None

@@ -29,7 +29,7 @@ output "s3_bucket_name" {
 }
 
 output "secrets_manager_secret_name" {
-  description = "Update JIRA/Slack credentials here after apply"
+  description = "Update JIRA/Slack/Databricks credentials here after apply"
   value       = aws_secretsmanager_secret.app.name
 }
 

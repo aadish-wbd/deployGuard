@@ -103,9 +103,11 @@ variable "secrets_placeholder" {
   description = "Initial Secrets Manager JSON (update real values in console after apply)"
   type        = map(string)
   default = {
-    jira_email      = "replace-me@example.com"
-    jira_api_token  = "replace-me"
-    slack_bot_token = "replace-me"
+    jira_email               = "replace-me@example.com"
+    jira_api_token           = "replace-me"
+    slack_bot_token          = "replace-me"
+    databricks_client_id     = "replace-me"
+    databricks_client_secret = "replace-me"
   }
   sensitive = true
 }

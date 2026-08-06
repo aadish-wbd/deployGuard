@@ -87,4 +87,19 @@ def client(fakes):
         test_client.app.state.jira_client = fakes["jira"]
         test_client.app.state.slack_client = fakes["slack"]
         test_client.app.state.s3_store = fakes["s3"]
+        test_client.app.state.databricks_client = FakeDatabricksClient()
         yield test_client
+
+
+class FakeDatabricksClient:
+    def __init__(self):
+        self.configured = True
+
+    def get_failure_context(self, run_id: str) -> dict:
+        return {
+            "error_message": "not used in generic investigate tests",
+            "run_id": run_id,
+        }
+
+    def resolve_job_id(self, run_id: str, job_id=None):
+        return job_id
