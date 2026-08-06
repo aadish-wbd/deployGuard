@@ -63,3 +63,31 @@ class SlackClient:
 
         if not body.get("ok"):
             raise SlackError(f"Slack API error: {body.get('error')}")
+
+    def send_alert_raw(
+        self, message: str, jira_ticket: Optional[str] = None, severity: str = "medium"
+    ) -> None:
+        """Send a Slack alert from raw parameters (used by AgentCore tool executor)."""
+        settings = self._settings
+        mentions = " ".join(f"<@{m}>" for m in settings.slack_oncall_mentions)
+        lines = [message]
+        if jira_ticket:
+            lines.append(f"JIRA: {settings.jira_base_url}/browse/{jira_ticket}" if settings.jira_base_url else f"JIRA: {jira_ticket}")
+        if mentions:
+            lines.append(mentions)
+        text = "\n".join(lines)
+
+        try:
+            response = httpx.post(
+                "https://slack.com/api/chat.postMessage",
+                headers={"Authorization": f"Bearer {settings.slack_bot_token}"},
+                json={"channel": settings.slack_channel, "text": text},
+                timeout=10.0,
+            )
+            response.raise_for_status()
+            body = response.json()
+        except httpx.HTTPError as exc:
+            raise SlackError(f"Slack request failed: {exc}") from exc
+
+        if not body.get("ok"):
+            raise SlackError(f"Slack API error: {body.get('error')}")

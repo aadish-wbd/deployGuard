@@ -27,10 +27,17 @@ class Settings(BaseSettings):
 
     # --- AWS / Bedrock ---
     aws_region: str = "us-east-1"
-    bedrock_agent_id: str = ""
-    bedrock_agent_alias_id: str = "TSTALIASID"
+    bedrock_model_id: str = "us.anthropic.claude-sonnet-4-20250514-v1:0"
     bedrock_max_retries: int = 3
     bedrock_retry_base_delay_seconds: float = 1.0
+
+    # --- AgentCore Harness (optional — enables tool orchestration) ---
+    agentcore_harness_arn: str = ""
+
+    # --- Knowledge Bases (optional, for inline agent retrieval) ---
+    code_knowledge_base_id: str = ""
+    metrics_knowledge_base_id: str = ""
+    kb_number_of_results: int = 8
 
     # --- S3 persistence ---
     s3_bucket: str = "deployguard-incidents"

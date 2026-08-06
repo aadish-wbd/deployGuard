@@ -101,3 +101,36 @@ class JiraClient:
                 response.raise_for_status()
             except httpx.HTTPError:
                 logger.exception("jira_add_watcher_failed", extra={"ticket_key": ticket_key, "account_id": account_id})
+
+    def create_ticket_raw(
+        self, summary: str, description: str, priority: str = "Medium", labels: list[str] | None = None
+    ) -> tuple[str, str]:
+        """Create a JIRA ticket from raw parameters (used by AgentCore tool executor)."""
+        settings = self._settings
+        payload = {
+            "fields": {
+                "project": {"key": settings.jira_project_key},
+                "summary": summary[:255],
+                "description": description,
+                "issuetype": {"name": "Bug"},
+                "priority": {"name": priority},
+                "labels": labels or ["deployguard"],
+            }
+        }
+        if settings.jira_default_assignee:
+            payload["fields"]["assignee"] = {"accountId": settings.jira_default_assignee}
+
+        try:
+            response = httpx.post(
+                f"{settings.jira_base_url}/rest/api/3/issue",
+                json=payload,
+                auth=(settings.jira_email, settings.jira_api_token),
+                timeout=10.0,
+            )
+            response.raise_for_status()
+        except httpx.HTTPError as exc:
+            raise JiraError(f"JIRA ticket creation failed: {exc}") from exc
+
+        ticket_key = response.json()["key"]
+        ticket_url = f"{settings.jira_base_url}/browse/{ticket_key}"
+        return ticket_key, ticket_url
