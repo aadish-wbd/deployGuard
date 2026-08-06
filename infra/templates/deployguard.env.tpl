@@ -1,0 +1,13 @@
+AWS_REGION=${aws_region}
+S3_BUCKET=${s3_bucket}
+BEDROCK_AGENT_ID=${bedrock_agent_id}
+BEDROCK_AGENT_ALIAS_ID=${bedrock_agent_alias_id}
+SECRETS_MANAGER_SECRET_NAME=${secrets_manager_secret_name}
+ENABLE_JIRA=${enable_jira}
+ENABLE_SLACK=${enable_slack}
+JIRA_BASE_URL=${jira_base_url}
+JIRA_PROJECT_KEY=${jira_project_key}
+SLACK_CHANNEL=${slack_channel}
+%{ if daily_investigation_cap != null ~}
+DAILY_INVESTIGATION_CAP=${daily_investigation_cap}
+%{ endif ~}
