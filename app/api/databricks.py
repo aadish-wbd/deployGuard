@@ -4,6 +4,8 @@ Endpoints:
   POST /api/v1/databricks/runs/context  — fetch failure context only (manual / debug)
   POST /api/v1/databricks/investigate   — automated: context -> investigate -> DeployGuard
 """
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from app.api.investigate import execute_investigation
@@ -80,7 +82,7 @@ async def investigate_from_databricks_run(
     jira_client: JiraClient = Depends(get_jira_client),
     slack_client: SlackClient = Depends(get_slack_client),
     s3_store: S3IncidentStore = Depends(get_s3_store),
-    postgres_store: PostgresIncidentStore | None = Depends(get_postgres_store),
+    postgres_store: Optional[PostgresIncidentStore] = Depends(get_postgres_store),
     cache: TTLCache = Depends(get_dedup_cache),
 ) -> InvestigateResponse:
     """Automated flow: Databricks export -> to_investigate_request -> DeployGuard."""

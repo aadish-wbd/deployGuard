@@ -1,4 +1,6 @@
 """GET /health (FR-7) — service + Bedrock connectivity check."""
+from typing import Optional
+
 from fastapi import APIRouter, Depends
 
 from app.config import Settings
@@ -14,10 +16,10 @@ router = APIRouter()
 def health(
     settings: Settings = Depends(get_settings_dep),
     bedrock_client: BedrockAgentClient = Depends(get_bedrock_client),
-    postgres_store: PostgresIncidentStore | None = Depends(get_postgres_store),
+    postgres_store: Optional[PostgresIncidentStore] = Depends(get_postgres_store),
 ) -> HealthResponse:
     bedrock_ok = bedrock_client.health_check()
-    postgres_ok: bool | None = None
+    postgres_ok: Optional[bool] = None
     if settings.postgres_enabled:
         postgres_ok = postgres_store.ping() if postgres_store is not None else False
 

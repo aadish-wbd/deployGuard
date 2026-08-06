@@ -17,7 +17,7 @@ resource "aws_db_subnet_group" "incidents" {
 
 resource "aws_security_group" "rds" {
   name        = "${local.name_prefix}-rds-sg"
-  description = "Aurora PostgreSQL — DeployGuard EC2 only"
+  description = "Aurora PostgreSQL - DeployGuard EC2 only"
   vpc_id      = local.vpc_id
 
   ingress {
