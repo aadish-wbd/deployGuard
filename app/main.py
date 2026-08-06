@@ -34,9 +34,13 @@ async def lifespan(app: FastAPI):
         get_settings.cache_clear()
         settings = get_settings()
 
-    app.state.bedrock_client = BedrockAgentClient(settings)
     app.state.jira_client = JiraClient(settings)
     app.state.slack_client = SlackClient(settings)
+    app.state.bedrock_client = BedrockAgentClient(
+        settings,
+        jira_client=app.state.jira_client,
+        slack_client=app.state.slack_client,
+    )
     app.state.s3_store = S3IncidentStore(settings)
     app.state.databricks_client = DatabricksClient(settings)
     app.state.dedup_cache = TTLCache(settings.dedup_cache_ttl_seconds)
