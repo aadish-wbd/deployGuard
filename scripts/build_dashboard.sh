@@ -14,5 +14,9 @@ if [ ! -d node_modules ]; then
   npm ci 2>/dev/null || npm install
 fi
 
+export HOME="$ROOT"
+export NPM_CONFIG_CACHE="$ROOT/.npm-cache"
+mkdir -p "$NPM_CONFIG_CACHE"
+
 npm run build
 echo "Dashboard built at frontend/dist"

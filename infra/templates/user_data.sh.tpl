@@ -29,9 +29,10 @@ sudo -u "$APP_USER" "$APP_DIR/.venv/bin/pip" install -r "$APP_DIR/requirements.t
 
 # --- Dashboard UI (Node.js build) ---
 dnf install -y nodejs npm
+mkdir -p "$APP_DIR/.npm-cache"
+chown -R "$APP_USER:$APP_USER" "$APP_DIR/.npm-cache"
 cd "$APP_DIR/frontend"
-sudo -u "$APP_USER" npm ci 2>/dev/null || sudo -u "$APP_USER" npm install
-sudo -u "$APP_USER" npm run build
+sudo -u "$APP_USER" bash -lc "export HOME=$APP_DIR NPM_CONFIG_CACHE=$APP_DIR/.npm-cache; npm install && npm run build"
 cd "$APP_DIR"
 
 # --- Environment file (non-secrets; secrets loaded from Secrets Manager at runtime) ---

@@ -30,7 +30,8 @@ COMMAND_ID=$(aws ssm send-command \
     \"sudo -u deployguard git checkout $GIT_BRANCH\",
     \"sudo -u deployguard git pull origin $GIT_BRANCH\",
     \"sudo -u deployguard $APP_DIR/.venv/bin/pip install -r $APP_DIR/requirements.txt\",
-    \"cd $APP_DIR/frontend && (sudo -u deployguard npm ci 2>/dev/null || sudo -u deployguard npm install) && sudo -u deployguard npm run build\",
+    \"cd $APP_DIR/frontend\",
+    \"sudo -u deployguard bash -lc 'export HOME=$APP_DIR NPM_CONFIG_CACHE=$APP_DIR/.npm-cache; rm -rf node_modules; npm install && npm run build'\",
     \"sudo systemctl restart deployguard\",
     \"sleep 3\",
     \"curl -sf http://127.0.0.1:8000/health\"
