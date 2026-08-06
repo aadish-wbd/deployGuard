@@ -53,6 +53,36 @@ data "aws_iam_policy_document" "ec2_permissions" {
   }
 
   statement {
+    sid    = "BedrockInvokeModel"
+    effect = "Allow"
+    actions = [
+      "bedrock:InvokeModel",
+      "bedrock:InvokeModelWithResponseStream",
+      "bedrock:Converse",
+    ]
+    resources = [
+      "arn:aws:bedrock:${var.aws_region}:${local.account_id}:inference-profile/*",
+      "arn:aws:bedrock:*::foundation-model/*",
+    ]
+  }
+
+  dynamic "statement" {
+    for_each = var.agentcore_harness_arn != "" ? [1] : []
+    content {
+      sid    = "BedrockAgentCoreHarness"
+      effect = "Allow"
+      actions = [
+        "bedrock-agentcore:InvokeHarness",
+        "bedrock-agentcore:InvokeAgentRuntime",
+      ]
+      resources = [
+        var.agentcore_harness_arn,
+        "${var.agentcore_harness_arn}/*",
+      ]
+    }
+  }
+
+  statement {
     sid    = "S3IncidentsBucket"
     effect = "Allow"
     actions = [
