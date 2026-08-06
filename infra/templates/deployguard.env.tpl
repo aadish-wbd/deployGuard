@@ -15,6 +15,9 @@ JIRA_CLOUD_ID=${jira_cloud_id}
 JIRA_PROJECT_KEY=${jira_project_key}
 JIRA_ISSUE_TYPE=${jira_issue_type}
 SLACK_CHANNEL=${slack_channel}
+ENABLE_DATABRICKS=${enable_databricks}
+DATABRICKS_HOST=${databricks_host}
+DATABRICKS_DEFAULT_ENVIRONMENT=${databricks_default_environment}
 %{ if daily_investigation_cap != null ~}
 DAILY_INVESTIGATION_CAP=${daily_investigation_cap}
 %{ endif ~}

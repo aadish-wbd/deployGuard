@@ -21,6 +21,10 @@ jira_project_key = "KAN"
 jira_issue_type  = "Task"
 slack_channel    = "#hackathon"
 
+enable_databricks              = true
+databricks_host                = "https://wbd-disc-dev-adsci-test-workspace.cloud.databricks.com"
+databricks_default_environment = "dev"
+
 # Aurora — smallest/cheapest instance (default db.t4g.medium, ~$50/mo us-east-1)
 # aurora_instance_class  = "db.t4g.medium"
 # aurora_engine_version  = "17.4"

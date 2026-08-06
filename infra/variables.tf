@@ -117,6 +117,24 @@ variable "slack_channel" {
   default     = "#hackathon"
 }
 
+variable "enable_databricks" {
+  description = "Enable Databricks integration in the app"
+  type        = bool
+  default     = true
+}
+
+variable "databricks_host" {
+  description = "Databricks workspace URL (non-secret), e.g. https://xxx.cloud.databricks.com"
+  type        = string
+  default     = ""
+}
+
+variable "databricks_default_environment" {
+  description = "Default environment label for Databricks run context (e.g. production, staging)"
+  type        = string
+  default     = "production"
+}
+
 variable "daily_investigation_cap" {
   description = "Optional daily cap on investigations (null = unlimited)"
   type        = number
