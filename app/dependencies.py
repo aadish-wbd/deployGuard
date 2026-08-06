@@ -4,12 +4,15 @@ Clients are constructed once at startup (see app.main) and reused across
 requests; boto3/httpx clients are safe to share across a single-process
 FastAPI app.
 """
+from typing import Optional
+
 from fastapi import Request
 
 from app.config import Settings, get_settings
 from app.core.cache import TTLCache
 from app.services.bedrock import BedrockAgentClient
 from app.services.jira import JiraClient
+from app.services.postgres_store import PostgresIncidentStore
 from app.services.s3_store import S3IncidentStore
 from app.services.slack import SlackClient
 
@@ -36,3 +39,7 @@ def get_s3_store(request: Request) -> S3IncidentStore:
 
 def get_dedup_cache(request: Request) -> TTLCache:
     return request.app.state.dedup_cache
+
+
+def get_postgres_store(request: Request) -> Optional[PostgresIncidentStore]:
+    return getattr(request.app.state, "postgres_store", None)

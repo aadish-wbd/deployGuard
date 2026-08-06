@@ -25,23 +25,9 @@ from app.core.logging_config import get_logger
 from app.models.incident import IncidentRecord
 from app.models.schemas import IncidentListResponse, IncidentSummary
 
+from app.services.rca import build_rca_markdown
+
 logger = get_logger(__name__)
-
-
-def _build_rca_markdown(record: IncidentRecord) -> str:
-    evidence_lines = "\n".join(f"- {item}" for item in record.evidence) or "- (none)"
-    return (
-        f"# RCA — {record.investigation_id}\n\n"
-        f"- **Service:** {record.service}\n"
-        f"- **Environment:** {record.environment}\n"
-        f"- **Status:** {record.metadata.status}\n"
-        f"- **Timestamp:** {record.timestamp.isoformat()}\n\n"
-        f"## Root cause\n{record.root_cause or '(unavailable)'}\n\n"
-        f"## Confidence\n{record.confidence if record.confidence is not None else 'N/A'}\n\n"
-        f"## Summary\n{record.rca_summary or '(unavailable)'}\n\n"
-        f"## Evidence\n{evidence_lines}\n\n"
-        f"## Suggested fix\n{record.suggested_fix or '(none)'}\n"
-    )
 
 
 class S3IncidentStore:
@@ -55,7 +41,7 @@ class S3IncidentStore:
 
         incident_json = record.model_dump_json(indent=2)
         input_json = record.input.model_dump_json(indent=2)
-        rca_md = _build_rca_markdown(record)
+        rca_md = build_rca_markdown(record)
 
         self._client.put_object(Bucket=bucket, Key=f"{prefix}/incident.json", Body=incident_json.encode("utf-8"))
         self._client.put_object(Bucket=bucket, Key=f"{prefix}/rca.md", Body=rca_md.encode("utf-8"))

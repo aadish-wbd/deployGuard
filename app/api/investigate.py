@@ -1,14 +1,15 @@
 """POST /api/v1/investigate (FR-1) — the main investigation endpoint.
 
 Orchestrates: payload validation -> dedup cache -> daily cap -> Bedrock analysis ->
-JIRA ticket -> Slack alert -> S3 persistence. JIRA/Slack/S3 failures are
-logged and flagged, never raised (NFR-7); a Bedrock failure yields a
+JIRA ticket -> Slack alert -> S3 persistence -> PostgreSQL persistence (when configured).
+JIRA/Slack/S3/Postgres failures are logged and flagged, never raised (NFR-7); a Bedrock failure yields a
 `failed` status with error_detail instead of a 5xx (no silent failure).
 """
 import json
 import time
 import uuid
 from datetime import datetime, timezone
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import ValidationError
@@ -22,6 +23,7 @@ from app.dependencies import (
     get_bedrock_client,
     get_dedup_cache,
     get_jira_client,
+    get_postgres_store,
     get_s3_store,
     get_settings_dep,
     get_slack_client,
@@ -30,6 +32,7 @@ from app.models.incident import IncidentMetadata, IncidentRecord
 from app.models.schemas import ActionsTaken, InvestigateRequest, InvestigateResponse
 from app.services.bedrock import BedrockAgentClient, BedrockInvocationError
 from app.services.jira import JiraClient, JiraError
+from app.services.postgres_store import PostgresIncidentStore, s3_uris_for_record
 from app.services.s3_store import S3IncidentStore
 from app.services.slack import SlackClient, SlackError
 
@@ -68,6 +71,7 @@ async def investigate(
     jira_client: JiraClient = Depends(get_jira_client),
     slack_client: SlackClient = Depends(get_slack_client),
     s3_store: S3IncidentStore = Depends(get_s3_store),
+    postgres_store: Optional[PostgresIncidentStore] = Depends(get_postgres_store),
     cache: TTLCache = Depends(get_dedup_cache),
 ) -> InvestigateResponse:
     payload = await _parse_request(request, settings)
@@ -155,6 +159,15 @@ async def investigate(
         s3_report_url = s3_store.save(record)
     except Exception:
         logger.exception("s3_persist_failed", extra={"investigation_id": investigation_id})
+
+    if postgres_store is not None:
+        s3_report_uri, rca_s3_uri = s3_uris_for_record(settings, record)
+        if s3_report_url:
+            s3_report_uri = s3_report_url
+        try:
+            postgres_store.save(record, rca_s3_uri=rca_s3_uri, s3_report_uri=s3_report_uri)
+        except Exception:
+            logger.exception("postgres_persist_failed", extra={"investigation_id": investigation_id})
 
     logger.info(
         "investigation_complete",

@@ -28,6 +28,7 @@ def test_investigate_happy_path(client, fakes):
     assert body["actions"]["slack_sent"] is True
     assert body["cached"] is False
     assert len(fakes["s3"].saved) == 1
+    assert len(fakes["postgres"].saved) == 1
 
 
 def test_investigate_bedrock_failure_returns_failed_status(client):

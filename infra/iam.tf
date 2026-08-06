@@ -51,6 +51,7 @@ data "aws_iam_policy_document" "ec2_permissions" {
     ]
     resources = [
       aws_secretsmanager_secret.app.arn,
+      aws_secretsmanager_secret.database.arn,
     ]
   }
 

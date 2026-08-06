@@ -99,6 +99,36 @@ variable "daily_investigation_cap" {
   default     = null
 }
 
+variable "aurora_instance_class" {
+  description = "Aurora instance class — db.t4g.medium is the smallest (and cheapest) Aurora size"
+  type        = string
+  default     = "db.t4g.medium"
+}
+
+variable "aurora_engine_version" {
+  description = "Aurora PostgreSQL engine version"
+  type        = string
+  default     = "17.4"
+}
+
+variable "db_name" {
+  description = "Initial database name on the Aurora cluster"
+  type        = string
+  default     = "deployguard"
+}
+
+variable "db_master_username" {
+  description = "Aurora master username"
+  type        = string
+  default     = "deployguard"
+}
+
+variable "db_backup_retention_days" {
+  description = "Aurora backup retention (1 day minimum — keeps dev cost down)"
+  type        = number
+  default     = 1
+}
+
 variable "secrets_placeholder" {
   description = "Initial Secrets Manager JSON (update real values in console after apply)"
   type        = map(string)

@@ -1,18 +1,37 @@
 """GET /health (FR-7) — service + Bedrock connectivity check."""
 from fastapi import APIRouter, Depends
 
-from app.dependencies import get_bedrock_client
+from app.config import Settings
+from app.dependencies import get_bedrock_client, get_postgres_store, get_settings_dep
 from app.models.schemas import HealthResponse
 from app.services.bedrock import BedrockAgentClient
+from app.services.postgres_store import PostgresIncidentStore
 
 router = APIRouter()
 
 
 @router.get("/health", response_model=HealthResponse)
-def health(bedrock_client: BedrockAgentClient = Depends(get_bedrock_client)) -> HealthResponse:
+def health(
+    settings: Settings = Depends(get_settings_dep),
+    bedrock_client: BedrockAgentClient = Depends(get_bedrock_client),
+    postgres_store: PostgresIncidentStore | None = Depends(get_postgres_store),
+) -> HealthResponse:
     bedrock_ok = bedrock_client.health_check()
+    postgres_ok: bool | None = None
+    if settings.postgres_enabled:
+        postgres_ok = postgres_store.ping() if postgres_store is not None else False
+
+    if not bedrock_ok:
+        detail = "Bedrock agent unreachable"
+    elif postgres_ok is False:
+        detail = "PostgreSQL unreachable"
+    else:
+        detail = None
+
+    overall_ok = bedrock_ok and (postgres_ok is None or postgres_ok)
     return HealthResponse(
-        status="ok" if bedrock_ok else "degraded",
+        status="ok" if overall_ok else "degraded",
         bedrock_reachable=bedrock_ok,
-        detail=None if bedrock_ok else "Bedrock agent unreachable",
+        postgres_reachable=postgres_ok,
+        detail=detail,
     )

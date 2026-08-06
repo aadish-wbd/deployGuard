@@ -77,6 +77,7 @@ class InvestigateResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: Literal["ok", "degraded"]
     bedrock_reachable: bool
+    postgres_reachable: Optional[bool] = None
     detail: Optional[str] = None
 
 
@@ -89,6 +90,21 @@ class IncidentSummary(BaseModel):
     root_cause: Optional[str] = None
     confidence: Optional[float] = None
     jira_ticket: Optional[str] = None
+
+
+class DashboardStatsResponse(BaseModel):
+    total_all: int
+    total_last_7_days: int
+    total_last_30_days: int
+    open_count: int
+    in_progress_count: int
+    resolved_count: int
+    closed_count: int
+    unassigned_count: int
+    no_jira_count: int
+    failed_count: int
+    by_service: Dict[str, int] = Field(default_factory=dict)
+    by_severity: Dict[str, int] = Field(default_factory=dict)
 
 
 class IncidentListResponse(BaseModel):

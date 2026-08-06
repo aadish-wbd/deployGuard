@@ -70,6 +70,66 @@ class FakeS3Store:
         return IncidentListResponse(items=[])
 
 
+class FakePostgresStore:
+    def __init__(self):
+        self.saved = []
+
+    def ping(self) -> bool:
+        return True
+
+    def save(self, record, *, rca_s3_uri: str, s3_report_uri: str) -> None:
+        self.saved.append((record, rca_s3_uri, s3_report_uri))
+
+    def get(self, investigation_id: str):
+        for record, _, _ in self.saved:
+            if record.investigation_id == investigation_id:
+                return record
+        return None
+
+    def list(self, service=None, status=None, limit=20, page_token=None) -> IncidentListResponse:
+        items = []
+        for record, _, _ in self.saved:
+            if service and record.service != service:
+                continue
+            if status and record.metadata.status != status:
+                continue
+            items.append(
+                {
+                    "investigation_id": record.investigation_id,
+                    "timestamp": record.timestamp,
+                    "service": record.service,
+                    "environment": record.environment,
+                    "status": record.metadata.status,
+                    "root_cause": record.root_cause,
+                    "confidence": record.confidence,
+                    "jira_ticket": record.actions.jira_ticket,
+                }
+            )
+        from app.models.schemas import IncidentSummary
+
+        summaries = [IncidentSummary(**item) for item in items[:limit]]
+        return IncidentListResponse(items=summaries)
+
+    def dashboard_stats(self, service=None):
+        return {
+            "total_all": len(self.saved),
+            "total_last_7_days": len(self.saved),
+            "total_last_30_days": len(self.saved),
+            "open_count": len(self.saved),
+            "in_progress_count": 0,
+            "resolved_count": 0,
+            "closed_count": 0,
+            "unassigned_count": len(self.saved),
+            "no_jira_count": len(self.saved),
+            "failed_count": 0,
+            "by_service": {},
+            "by_severity": {},
+        }
+
+    def close(self) -> None:
+        return None
+
+
 @pytest.fixture
 def fakes():
     return {
@@ -77,6 +137,7 @@ def fakes():
         "jira": FakeJiraClient(),
         "slack": FakeSlackClient(),
         "s3": FakeS3Store(),
+        "postgres": FakePostgresStore(),
     }
 
 
@@ -87,4 +148,5 @@ def client(fakes):
         test_client.app.state.jira_client = fakes["jira"]
         test_client.app.state.slack_client = fakes["slack"]
         test_client.app.state.s3_store = fakes["s3"]
+        test_client.app.state.postgres_store = fakes["postgres"]
         yield test_client

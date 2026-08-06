@@ -38,6 +38,14 @@ class Settings(BaseSettings):
 
     # --- Secrets Manager ---
     secrets_manager_secret_name: Optional[str] = None
+    database_secret_name: Optional[str] = None
+
+    # --- PostgreSQL (dashboard store) ---
+    pghost: Optional[str] = None
+    pgport: int = 5432
+    pgdatabase: str = "deployguard"
+    pguser: Optional[str] = None
+    pgpassword: Optional[str] = None
 
     # --- JIRA ---
     enable_jira: bool = True
@@ -71,6 +79,10 @@ class Settings(BaseSettings):
 
     # --- Cost control (NFR-10) ---
     daily_investigation_cap: Optional[int] = None
+
+    @property
+    def postgres_enabled(self) -> bool:
+        return bool(self.pghost and self.pguser and self.pgpassword)
 
 
 @lru_cache

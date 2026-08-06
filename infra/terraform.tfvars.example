@@ -17,6 +17,11 @@ jira_base_url    = "https://yourteam.atlassian.net"
 jira_project_key = "OPS"
 slack_channel    = "#deployguard-alerts"
 
+# Aurora — smallest/cheapest instance (default db.t4g.medium, ~$50/mo us-east-1)
+# aurora_instance_class  = "db.t4g.medium"
+# aurora_engine_version  = "17.4"
+# db_backup_retention_days = 1
+
 # Optional SSH key (SSM deploy works without it)
 # key_name = "your-keypair"
 
