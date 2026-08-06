@@ -9,6 +9,7 @@ from fastapi import Request
 from app.config import Settings, get_settings
 from app.core.cache import TTLCache
 from app.services.bedrock import BedrockAgentClient
+from app.services.databricks import DatabricksClient
 from app.services.jira import JiraClient
 from app.services.s3_store import S3IncidentStore
 from app.services.slack import SlackClient
@@ -36,3 +37,7 @@ def get_s3_store(request: Request) -> S3IncidentStore:
 
 def get_dedup_cache(request: Request) -> TTLCache:
     return request.app.state.dedup_cache
+
+
+def get_databricks_client(request: Request) -> DatabricksClient:
+    return request.app.state.databricks_client

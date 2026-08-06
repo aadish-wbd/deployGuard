@@ -35,5 +35,8 @@ def build_agent_input(request: InvestigateRequest) -> str:
             lines.append(f"task_name: {ctx.task_name}")
         if ctx.severity:
             lines.append(f"severity: {ctx.severity}")
+        if ctx.notebook_context:
+            lines.append("notebook:")
+            lines.append(ctx.notebook_context)
 
     return "\n".join(lines)

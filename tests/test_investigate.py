@@ -49,7 +49,7 @@ def test_investigate_bedrock_failure_returns_failed_status(client):
 
 def test_investigate_oversized_body_rejected(client):
     payload = dict(VALID_PAYLOAD)
-    payload["context"] = dict(payload["context"], metrics={f"k{i}": "v" * 50 for i in range(300)})
+    payload["context"] = dict(payload["context"], metrics={f"k{i}": "v" * 200 for i in range(300)})
     response = client.post("/api/v1/investigate", json=payload)
     assert response.status_code == 400
     assert "exceeds" in response.json()["detail"]

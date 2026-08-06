@@ -61,6 +61,13 @@ class Settings(BaseSettings):
     slack_channel: str = "#deployguard-alerts"
     slack_oncall_mentions: List[str] = Field(default_factory=list)
 
+    # --- Databricks ---
+    enable_databricks: bool = True
+    databricks_host: str = ""
+    databricks_token: str = ""
+    databricks_client_id: str = ""
+    databricks_client_secret: str = ""
+
     # --- Payload / cost guardrails (NFR-10, payload limits) ---
     max_error_message_chars: int = MAX_ERROR_MESSAGE_CHARS
     max_stack_trace_chars: int = MAX_STACK_TRACE_CHARS

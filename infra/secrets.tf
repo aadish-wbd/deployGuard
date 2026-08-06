@@ -1,6 +1,6 @@
 resource "aws_secretsmanager_secret" "app" {
   name        = "${local.name_prefix}/app-credentials"
-  description = "JIRA and Slack credentials for DeployGuard (update values after apply)"
+  description = "JIRA, Slack, and Databricks credentials for DeployGuard (update values after apply)"
 }
 
 resource "aws_secretsmanager_secret_version" "app" {
