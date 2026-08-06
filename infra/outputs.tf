@@ -18,6 +18,11 @@ output "dashboard_stats_url" {
   value       = "http://${aws_lb.app.dns_name}/api/v1/dashboard/stats"
 }
 
+output "databricks_webhook_url" {
+  description = "Configure this URL in Databricks job failure webhook notifications"
+  value       = "http://${aws_lb.app.dns_name}/api/v1/databricks/webhook"
+}
+
 output "ec2_instance_id" {
   description = "EC2 instance ID (for SSM deploy script)"
   value       = aws_instance.app.id

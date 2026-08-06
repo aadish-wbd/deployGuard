@@ -9,7 +9,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Dict, List, Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.core.limits import (
     MAX_ERROR_MESSAGE_CHARS,
@@ -169,3 +169,56 @@ class DatabricksRunContextResponse(BaseModel):
             ),
             triggered_by="databricks",
         )
+
+
+class DatabricksWebhookRun(BaseModel):
+    run_id: str
+    parent_run_id: Optional[str] = None
+
+    @field_validator("run_id", "parent_run_id", mode="before")
+    @classmethod
+    def _coerce_run_id(cls, value: object) -> object:
+        if value is None:
+            return value
+        return str(value)
+
+
+class DatabricksWebhookJob(BaseModel):
+    job_id: str
+    name: str
+
+    @field_validator("job_id", mode="before")
+    @classmethod
+    def _coerce_job_id(cls, value: object) -> str:
+        return str(value)
+
+
+class DatabricksWebhookTask(BaseModel):
+    task_key: str
+
+
+class DatabricksWebhookPayload(BaseModel):
+    """Native Databricks job notification webhook body (jobs.on_failure, etc.)."""
+
+    event_type: str
+    workspace_id: Optional[str] = None
+    run: DatabricksWebhookRun
+    job: DatabricksWebhookJob
+    task: Optional[DatabricksWebhookTask] = None
+
+    def extract_run_id(self) -> str:
+        """Run ID to pass to POST /api/v1/databricks/runs/context."""
+        return self.run.parent_run_id or self.run.run_id
+
+    def to_context_request(self) -> DatabricksRunContextRequest:
+        return DatabricksRunContextRequest(
+            run_id=self.extract_run_id(),
+            job_id=self.job.job_id,
+        )
+
+
+class DatabricksWebhookResponse(BaseModel):
+    status: Literal["accepted", "ignored"]
+    run_id: Optional[str] = None
+    event_type: Optional[str] = None
+    detail: Optional[str] = None

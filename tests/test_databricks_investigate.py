@@ -44,6 +44,61 @@ DATABRICKS_INVESTIGATE_PAYLOAD = {
 }
 
 
+DATABRICKS_WEBHOOK_FAILURE = {
+    "event_type": "jobs.on_failure",
+    "workspace_id": "12345",
+    "run": {"run_id": "123456789"},
+    "job": {"job_id": "516892700102118", "name": "freewheel-placement-pipeline"},
+}
+
+DATABRICKS_WEBHOOK_SUCCESS = {
+    "event_type": "jobs.on_success",
+    "workspace_id": "12345",
+    "run": {"run_id": "123456789"},
+    "job": {"job_id": "516892700102118", "name": "freewheel-placement-pipeline"},
+}
+
+DATABRICKS_WEBHOOK_TASK_FAILURE = {
+    "event_type": "jobs.on_failure",
+    "workspace_id": "12345",
+    "task": {"task_key": "Load Placements"},
+    "run": {"run_id": "999", "parent_run_id": "123456789"},
+    "job": {"job_id": "516892700102118", "name": "freewheel-placement-pipeline"},
+}
+
+
+def test_databricks_webhook_accepts_failure_and_investigates(client, fakes):
+    fake_db = FakeDatabricksClient()
+    client.app.state.databricks_client = fake_db
+
+    response = client.post("/api/v1/databricks/webhook", json=DATABRICKS_WEBHOOK_FAILURE)
+    assert response.status_code == 202
+
+    body = response.json()
+    assert body["status"] == "accepted"
+    assert body["run_id"] == "123456789"
+    assert body["event_type"] == "jobs.on_failure"
+    assert len(fake_db.calls) == 2
+    assert len(fakes["bedrock"].invocations) == 1
+
+
+def test_databricks_webhook_ignores_non_failure_events(client, fakes):
+    response = client.post("/api/v1/databricks/webhook", json=DATABRICKS_WEBHOOK_SUCCESS)
+    assert response.status_code == 202
+    assert response.json()["status"] == "ignored"
+    assert len(fakes["bedrock"].invocations) == 0
+
+
+def test_databricks_webhook_uses_parent_run_id_for_task_failures(client, fakes):
+    fake_db = FakeDatabricksClient()
+    client.app.state.databricks_client = fake_db
+
+    response = client.post("/api/v1/databricks/webhook", json=DATABRICKS_WEBHOOK_TASK_FAILURE)
+    assert response.status_code == 202
+    assert response.json()["run_id"] == "123456789"
+    assert fake_db.calls[0] == ("get_failure_context", "123456789")
+
+
 def test_databricks_automated_investigate_happy_path(client, fakes):
     fake_db = FakeDatabricksClient()
     client.app.state.databricks_client = fake_db
