@@ -28,6 +28,30 @@ data "aws_iam_policy_document" "ec2_permissions" {
     ]
   }
 
+  # Converse API fallback (used when AGENTCORE_HARNESS_ARN is unset)
+  statement {
+    sid    = "BedrockInvokeModel"
+    effect = "Allow"
+    actions = [
+      "bedrock:InvokeModel",
+      "bedrock:InvokeModelWithResponseStream",
+    ]
+    resources = [
+      "arn:aws:bedrock:*::foundation-model/*",
+      "arn:aws:bedrock:${var.aws_region}:${local.account_id}:inference-profile/*",
+    ]
+  }
+
+  # AgentCore Harness (optional — when AGENTCORE_HARNESS_ARN is configured)
+  statement {
+    sid    = "BedrockAgentCoreHarness"
+    effect = "Allow"
+    actions = [
+      "bedrock-agentcore:InvokeHarness",
+    ]
+    resources = ["*"]
+  }
+
   statement {
     sid    = "S3IncidentsBucket"
     effect = "Allow"

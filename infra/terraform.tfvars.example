@@ -4,6 +4,7 @@ aws_region             = "us-east-1"
 environment            = "dev"
 bedrock_agent_id       = "YOUR_BEDROCK_AGENT_ID"
 bedrock_agent_alias_id = "TSTALIASID"
+bedrock_model_id       = "us.anthropic.claude-sonnet-4-20250514-v1:0"
 
 # Restrict in production — your office/VPN CIDR
 allowed_cidr_blocks = ["0.0.0.0/0"]

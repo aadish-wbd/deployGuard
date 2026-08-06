@@ -2,6 +2,7 @@ AWS_REGION=${aws_region}
 S3_BUCKET=${s3_bucket}
 BEDROCK_AGENT_ID=${bedrock_agent_id}
 BEDROCK_AGENT_ALIAS_ID=${bedrock_agent_alias_id}
+BEDROCK_MODEL_ID=${bedrock_model_id}
 SECRETS_MANAGER_SECRET_NAME=${secrets_manager_secret_name}
 DATABASE_SECRET_NAME=${database_secret_name}
 PGHOST=${db_host}

@@ -15,6 +15,7 @@ resource "aws_instance" "app" {
       s3_bucket                   = aws_s3_bucket.incidents.bucket
       bedrock_agent_id            = var.bedrock_agent_id
       bedrock_agent_alias_id      = var.bedrock_agent_alias_id
+      bedrock_model_id            = var.bedrock_model_id
       secrets_manager_secret_name = aws_secretsmanager_secret.app.name
       enable_jira                 = var.enable_jira
       enable_slack                = var.enable_slack

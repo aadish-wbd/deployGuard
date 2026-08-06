@@ -51,6 +51,12 @@ variable "bedrock_agent_alias_id" {
   default     = "TSTALIASID"
 }
 
+variable "bedrock_model_id" {
+  description = "Bedrock Converse model ID or inference profile (Converse fallback when no harness ARN)"
+  type        = string
+  default     = "us.anthropic.claude-sonnet-4-20250514-v1:0"
+}
+
 variable "git_repo_url" {
   description = "Git repo cloned on EC2 at bootstrap (HTTPS or SSH)"
   type        = string
