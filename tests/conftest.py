@@ -19,8 +19,8 @@ class FakeBedrockClient:
         self._error = error
         self.invocations = []
 
-    def invoke(self, session_id: str, input_text: str) -> BedrockRcaOutput:
-        self.invocations.append((session_id, input_text))
+    def invoke(self, session_id: str, input_text: str, investigation_request=None) -> BedrockRcaOutput:
+        self.invocations.append((session_id, input_text, investigation_request))
         if self._error:
             raise self._error
         return self._rca
@@ -140,12 +140,18 @@ class FakePostgresStore:
         return None
 
 
+class FakeGitHubClient:
+    def format_investigation_context(self, request) -> str:
+        return "GitHub fallback: use error payload only for RCA."
+
+
 @pytest.fixture
 def fakes():
     return {
         "bedrock": FakeBedrockClient(),
         "jira": FakeJiraClient(),
         "slack": FakeSlackClient(),
+        "github": FakeGitHubClient(),
         "s3": FakeS3Store(),
         "postgres": FakePostgresStore(),
     }
@@ -157,6 +163,7 @@ def client(fakes):
         test_client.app.state.bedrock_client = fakes["bedrock"]
         test_client.app.state.jira_client = fakes["jira"]
         test_client.app.state.slack_client = fakes["slack"]
+        test_client.app.state.github_client = fakes["github"]
         test_client.app.state.s3_store = fakes["s3"]
         test_client.app.state.postgres_store = fakes["postgres"]
         test_client.app.state.databricks_client = FakeDatabricksClient()

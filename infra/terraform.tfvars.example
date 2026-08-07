@@ -12,7 +12,8 @@ allowed_cidr_blocks = ["0.0.0.0/0"]
 
 git_repo_url = "https://github.com/aadish-wbd/deployGuard.git"
 git_branch   = "main"
-github_default_repo = "aadish-wbd/deployGuard"
+github_search_orgs = ["discoveryinc-dci"]
+github_default_repo = ""
 
 enable_jira = true
 enable_slack = true

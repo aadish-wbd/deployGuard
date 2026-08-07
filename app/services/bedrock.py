@@ -116,6 +116,7 @@ HARNESS_TOOLS = [
                     "properties": {
                         "query": {"type": "string", "description": "Search query"},
                         "repo": {"type": "string", "description": "owner/repo format"},
+                        "org": {"type": "string", "description": "GitHub organization to search when repo is unknown"},
                     },
                     "required": ["query"],
                 },
@@ -132,7 +133,9 @@ and search GitHub code.
 
 When given an error payload:
 1. Analyze the error message, stack trace, and context.
-2. If a repo/service is identified, use github_search to find relevant code (pass repo as owner/name when known).
+2. If a repo/service is identified, use github_search to find relevant code.
+   Prefer github_org/github_repo from the payload; otherwise search configured orgs.
+   If GitHub returns fallback/no matches, continue RCA from the error payload only.
 3. Identify the root cause with evidence and choose the best JIRA issue type:
    Bug (defect/exception), Task (ops/config), Story (feature gap), Incident (outage/SEV).
 4. Create a JIRA ticket with the RCA using jira_create_ticket (include issue_type).
@@ -165,6 +168,10 @@ class ToolExecutor:
         self._jira = jira_client
         self._slack = slack_client
         self._github = github_client
+        self._investigation_request = None
+
+    def set_investigation_request(self, request) -> None:
+        self._investigation_request = request
 
     def execute(self, tool_name: str, tool_input: dict) -> dict:
         """Execute a tool and return the result."""
@@ -209,15 +216,26 @@ class ToolExecutor:
 
     def _exec_github(self, params: dict) -> dict:
         if not self._github:
-            return {"status": "skipped", "reason": "GitHub not configured"}
+            return {"status": "skipped", "reason": "GitHub not configured", "fallback": True}
         try:
+            if self._investigation_request is not None:
+                return self._github.search_for_investigation(
+                    self._investigation_request,
+                    query=params.get("query") or None,
+                )
             return self._github.search_code(
-                query=params.get("query", ""),
+                params.get("query", ""),
                 repo=params.get("repo") or None,
+                org=params.get("org") or None,
             )
         except GitHubError as exc:
             logger.warning("github_tool_failed", extra={"error": str(exc)})
-            return {"status": "error", "error": str(exc)}
+            return {
+                "status": "fallback",
+                "fallback": True,
+                "error": str(exc),
+                "message": "GitHub search failed; proceed with payload-only RCA.",
+            }
 
 
 class BedrockAgentClient:
@@ -242,7 +260,19 @@ class BedrockAgentClient:
             self._mode = "converse"
             logger.info("bedrock_mode", extra={"mode": "converse_fallback"})
 
-    def invoke(self, session_id: str, input_text: str) -> BedrockRcaOutput:
+    def invoke(
+        self,
+        session_id: str,
+        input_text: str,
+        investigation_request=None,
+    ) -> BedrockRcaOutput:
+        self._tool_executor.set_investigation_request(investigation_request)
+        try:
+            return self._invoke_with_retry(session_id, input_text)
+        finally:
+            self._tool_executor.set_investigation_request(None)
+
+    def _invoke_with_retry(self, session_id: str, input_text: str) -> BedrockRcaOutput:
         retryable_invoke = retry_with_backoff(
             max_retries=self._settings.bedrock_max_retries,
             base_delay_seconds=self._settings.bedrock_retry_base_delay_seconds,

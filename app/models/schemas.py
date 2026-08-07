@@ -47,6 +47,16 @@ class InvestigateContext(BaseModel):
     severity: Optional[Severity] = None
     notebook_context: Optional[str] = Field(default=None, max_length=MAX_NOTEBOOK_CONTEXT_CHARS)
     cloudwatch_alarm: Optional[CloudWatchAlarmContext] = None
+    github_org: Optional[str] = Field(
+        default=None,
+        max_length=128,
+        description="GitHub organization to search for the service repository",
+    )
+    github_repo: Optional[str] = Field(
+        default=None,
+        max_length=256,
+        description="Explicit owner/repo to search (overrides org-based repo discovery)",
+    )
 
 
 class InvestigateRequest(BaseModel):

@@ -22,6 +22,7 @@ from app.core.tokens import estimate_tokens
 from app.dependencies import (
     get_bedrock_client,
     get_dedup_cache,
+    get_github_client,
     get_jira_client,
     get_postgres_store,
     get_s3_store,
@@ -31,6 +32,7 @@ from app.dependencies import (
 from app.models.incident import IncidentMetadata, IncidentRecord
 from app.models.schemas import ActionsTaken, InvestigateRequest, InvestigateResponse
 from app.services.bedrock import BedrockAgentClient, BedrockInvocationError
+from app.services.github import GitHubClient
 from app.services.investigation_dedup import existing_rca_summary, find_existing_investigation
 from app.services.jira import JiraClient, JiraError
 from app.services.postgres_store import PostgresIncidentStore, s3_uris_for_record
@@ -97,6 +99,7 @@ async def investigate(
     request: Request,
     settings: Settings = Depends(get_settings_dep),
     bedrock_client: BedrockAgentClient = Depends(get_bedrock_client),
+    github_client: GitHubClient = Depends(get_github_client),
     jira_client: JiraClient = Depends(get_jira_client),
     slack_client: SlackClient = Depends(get_slack_client),
     s3_store: S3IncidentStore = Depends(get_s3_store),
@@ -109,6 +112,7 @@ async def investigate(
         request,
         settings,
         bedrock_client,
+        github_client,
         jira_client,
         slack_client,
         s3_store,
@@ -122,6 +126,7 @@ async def execute_investigation(
     request: Request,
     settings: Settings,
     bedrock_client: BedrockAgentClient,
+    github_client: GitHubClient,
     jira_client: JiraClient,
     slack_client: SlackClient,
     s3_store: S3IncidentStore,
@@ -159,7 +164,8 @@ async def execute_investigation(
     investigation_id = str(uuid.uuid4())
     started_at = time.monotonic()
 
-    input_text = build_agent_input(payload, github_default_repo=settings.github_default_repo)
+    github_context = github_client.format_investigation_context(payload)
+    input_text = build_agent_input(payload, github_context=github_context)
     token_estimate = estimate_tokens(input_text)
     if token_estimate > settings.max_input_tokens_estimate:
         raise HTTPException(
@@ -173,7 +179,11 @@ async def execute_investigation(
     status: str = "completed"
 
     try:
-        rca = bedrock_client.invoke(session_id=investigation_id, input_text=input_text)
+        rca = bedrock_client.invoke(
+            session_id=investigation_id,
+            input_text=input_text,
+            investigation_request=payload,
+        )
         root_cause = rca.root_cause
         confidence = rca.confidence
         evidence = rca.evidence

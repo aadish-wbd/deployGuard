@@ -22,6 +22,7 @@ from app.dependencies import (
     get_bedrock_client,
     get_databricks_client,
     get_dedup_cache,
+    get_github_client,
     get_jira_client,
     get_postgres_store,
     get_s3_store,
@@ -39,6 +40,7 @@ from app.models.schemas import (
 )
 from app.services.bedrock import BedrockAgentClient
 from app.services.databricks import DatabricksClient, DatabricksError
+from app.services.github import GitHubClient
 from app.services.jira import JiraClient
 from app.services.postgres_store import PostgresIncidentStore
 from app.services.s3_store import S3IncidentStore
@@ -84,6 +86,7 @@ async def _context_to_investigation(
     settings: Settings,
     databricks_client: DatabricksClient,
     bedrock_client: BedrockAgentClient,
+    github_client: GitHubClient,
     jira_client: JiraClient,
     slack_client: SlackClient,
     s3_store: S3IncidentStore,
@@ -107,6 +110,7 @@ async def _context_to_investigation(
         request,
         settings,
         bedrock_client,
+        github_client,
         jira_client,
         slack_client,
         s3_store,
@@ -121,6 +125,7 @@ async def _execute_databricks_investigation(
     settings: Settings,
     databricks_client: DatabricksClient,
     bedrock_client: BedrockAgentClient,
+    github_client: GitHubClient,
     jira_client: JiraClient,
     slack_client: SlackClient,
     s3_store: S3IncidentStore,
@@ -136,6 +141,7 @@ async def _execute_databricks_investigation(
         settings=settings,
         databricks_client=databricks_client,
         bedrock_client=bedrock_client,
+        github_client=github_client,
         jira_client=jira_client,
         slack_client=slack_client,
         s3_store=s3_store,
@@ -162,6 +168,7 @@ async def _run_webhook_pipeline(request: Request, webhook: DatabricksWebhookPayl
             settings=settings,
             databricks_client=request.app.state.databricks_client,
             bedrock_client=request.app.state.bedrock_client,
+            github_client=request.app.state.github_client,
             jira_client=request.app.state.jira_client,
             slack_client=request.app.state.slack_client,
             s3_store=request.app.state.s3_store,
@@ -228,6 +235,7 @@ async def investigate_from_databricks_run(
     settings: Settings = Depends(get_settings_dep),
     databricks_client: DatabricksClient = Depends(get_databricks_client),
     bedrock_client: BedrockAgentClient = Depends(get_bedrock_client),
+    github_client: GitHubClient = Depends(get_github_client),
     jira_client: JiraClient = Depends(get_jira_client),
     slack_client: SlackClient = Depends(get_slack_client),
     s3_store: S3IncidentStore = Depends(get_s3_store),
@@ -244,6 +252,7 @@ async def investigate_from_databricks_run(
         settings,
         databricks_client,
         bedrock_client,
+        github_client,
         jira_client,
         slack_client,
         s3_store,

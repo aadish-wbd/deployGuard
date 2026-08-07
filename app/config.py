@@ -11,7 +11,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import List, Optional
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.core.limits import (
@@ -51,6 +51,13 @@ class Settings(BaseSettings):
     # --- GitHub (optional — AgentCore github_search tool) ---
     github_token: str = ""
     github_default_repo: str = ""
+    # Comma-separated org names in env (e.g. discoveryinc-dci,other-org).
+    github_search_orgs: str = Field(default="")
+
+    def github_search_org_list(self) -> List[str]:
+        if not self.github_search_orgs.strip():
+            return []
+        return [item.strip() for item in self.github_search_orgs.split(",") if item.strip()]
 
     # --- PostgreSQL (dashboard store) ---
     pghost: Optional[str] = None

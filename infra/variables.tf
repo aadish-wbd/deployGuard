@@ -76,9 +76,15 @@ variable "git_branch" {
 }
 
 variable "github_default_repo" {
-  description = "Default owner/repo for AgentCore github_search during RCA"
+  description = "Optional fallback owner/repo when org lookup finds no service repository"
   type        = string
-  default     = "aadish-wbd/deployGuard"
+  default     = ""
+}
+
+variable "github_search_orgs" {
+  description = "GitHub organizations to search for application code during RCA"
+  type        = list(string)
+  default     = ["discoveryinc-dci"]
 }
 
 variable "enable_jira" {

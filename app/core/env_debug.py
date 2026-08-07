@@ -23,6 +23,7 @@ _TRACKED_ENV_KEYS = (
     "SLACK_BOT_TOKEN",
     "GITHUB_TOKEN",
     "GITHUB_DEFAULT_REPO",
+    "GITHUB_SEARCH_ORGS",
 )
 
 
@@ -81,6 +82,10 @@ def print_loaded_config(
     print(
         f"GITHUB_DEFAULT_REPO: {settings.github_default_repo or '(not set)'}"
         f" [{_env_source('GITHUB_DEFAULT_REPO')}]"
+    )
+    print(
+        f"GITHUB_SEARCH_ORGS: {settings.github_search_orgs or '(not set)'}"
+        f" [{_env_source('GITHUB_SEARCH_ORGS')}]"
     )
 
     stale = [key for key in _TRACKED_ENV_KEYS if key in os.environ]

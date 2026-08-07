@@ -12,6 +12,7 @@ from app.config import Settings, get_settings
 from app.core.cache import TTLCache
 from app.services.bedrock import BedrockAgentClient
 from app.services.databricks import DatabricksClient
+from app.services.github import GitHubClient
 from app.services.jira import JiraClient
 from app.services.postgres_store import PostgresIncidentStore
 from app.services.s3_store import S3IncidentStore
@@ -32,6 +33,10 @@ def get_jira_client(request: Request) -> JiraClient:
 
 def get_slack_client(request: Request) -> SlackClient:
     return request.app.state.slack_client
+
+
+def get_github_client(request: Request) -> GitHubClient:
+    return request.app.state.github_client
 
 
 def get_s3_store(request: Request) -> S3IncidentStore:

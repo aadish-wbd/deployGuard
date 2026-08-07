@@ -8,7 +8,7 @@ instructions, no duplicate fields.
 from app.models.schemas import InvestigateRequest
 
 
-def build_agent_input(request: InvestigateRequest, *, github_default_repo: str = "") -> str:
+def build_agent_input(request: InvestigateRequest, *, github_context: str = "") -> str:
     lines = [
         f"error_message: {request.error_message}",
         f"service: {request.service}",
@@ -20,6 +20,10 @@ def build_agent_input(request: InvestigateRequest, *, github_default_repo: str =
 
     ctx = request.context
     if ctx:
+        if ctx.github_org:
+            lines.append(f"github_org: {ctx.github_org}")
+        if ctx.github_repo:
+            lines.append(f"github_repo: {ctx.github_repo}")
         if ctx.deploy_sha:
             lines.append(f"deploy_sha: {ctx.deploy_sha}")
         if ctx.log_snippet:
@@ -49,7 +53,8 @@ def build_agent_input(request: InvestigateRequest, *, github_default_repo: str =
             if alarm.reason:
                 lines.append(f"cloudwatch_reason: {alarm.reason}")
 
-    if github_default_repo:
-        lines.append(f"github_repo: {github_default_repo}")
+    if github_context:
+        lines.append("github_code_search:")
+        lines.append(github_context)
 
     return "\n".join(lines)

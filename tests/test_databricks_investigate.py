@@ -137,7 +137,7 @@ def test_databricks_automated_investigate_happy_path(client, fakes):
     assert len(fake_db.calls) == 2
     assert len(fakes["bedrock"].invocations) == 1
 
-    session_id, input_text = fakes["bedrock"].invocations[0]
+    session_id, input_text, _investigation_request = fakes["bedrock"].invocations[0]
     assert "RuntimeError" in input_text
     assert "run_id: 123456789" in input_text
     assert "task_name: Load Placements" in input_text
@@ -203,7 +203,7 @@ def test_databricks_to_investigate_two_step_flow(client, fakes):
     assert body["root_cause"]
     assert len(fakes["bedrock"].invocations) == 1
 
-    session_id, input_text = fakes["bedrock"].invocations[0]
+    session_id, input_text, _investigation_request = fakes["bedrock"].invocations[0]
     assert "RuntimeError" in input_text
     assert "run_id: 123456789" in input_text
     assert "task_name: Load Placements" in input_text
