@@ -84,7 +84,7 @@ class FakePostgresStore:
     def ping(self) -> bool:
         return True
 
-    def find_existing_jira(self, *, error_message, service, deploy_sha):
+    def find_existing_jira(self, *, error_message, service, environment):
         return self._existing
 
     def save(self, record, *, rca_s3_uri: str, s3_report_uri: str) -> None:

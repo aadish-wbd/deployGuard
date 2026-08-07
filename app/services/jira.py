@@ -232,11 +232,10 @@ def _build_description(rca: BedrockRcaOutput) -> dict:
 
 
 def _issue_labels(request: InvestigateRequest) -> list[str]:
-    deploy_sha = request.context.deploy_sha if request.context else None
     return [
         "deployguard",
         request.service,
-        investigation_fingerprint_label(request.error_message, request.service, deploy_sha),
+        investigation_fingerprint_label(request.error_message, request.service, request.environment),
     ]
 
 
@@ -346,8 +345,9 @@ class JiraClient:
         if not settings.jira_base_url or not settings.jira_email or not settings.jira_api_token:
             return None
 
-        deploy_sha = request.context.deploy_sha if request.context else None
-        fp_label = investigation_fingerprint_label(request.error_message, request.service, deploy_sha)
+        fp_label = investigation_fingerprint_label(
+            request.error_message, request.service, request.environment
+        )
         jql = (
             f'project = "{settings.jira_project_key}" AND labels = deployguard '
             f'AND labels = "{fp_label}" ORDER BY created DESC'

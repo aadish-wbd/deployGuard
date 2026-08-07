@@ -30,14 +30,12 @@ def find_existing_investigation(
     postgres_store: Optional[PostgresIncidentStore],
 ) -> Optional[ExistingInvestigation]:
     """Return a prior completed investigation with a JIRA ticket, if one exists."""
-    deploy_sha = request.context.deploy_sha if request.context else None
-
     if postgres_store is not None:
         try:
             prior = postgres_store.find_existing_jira(
                 error_message=request.error_message,
                 service=request.service,
-                deploy_sha=deploy_sha,
+                environment=request.environment,
             )
             if prior is not None:
                 logger.info(

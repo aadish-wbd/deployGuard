@@ -1,11 +1,10 @@
 """Dedup cache for identical investigations (NFR-5).
 
-Hashes (error_message + service + deploy_sha) and returns a cached result
-if the same investigation was completed within the TTL window. In-memory
-and per-process only — fine for a single-instance hackathon deployment;
-a multi-instance deployment would need a shared store (DynamoDB/Redis).
+Hashes (error_message + service + environment) and returns a cached result if the same
+investigation was completed within the TTL window. In-memory and per-process
+only — fine for a single-instance hackathon deployment; a multi-instance
+deployment would need a shared store (DynamoDB/Redis).
 """
-import hashlib
 import threading
 import time
 from typing import Any, Optional
@@ -18,9 +17,10 @@ class TTLCache:
         self._lock = threading.Lock()
 
     @staticmethod
-    def make_key(error_message: str, service: str, deploy_sha: Optional[str]) -> str:
-        raw = f"{error_message}|{service}|{deploy_sha or ''}"
-        return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+    def make_key(error_message: str, service: str, environment: str) -> str:
+        from app.core.investigation_fingerprint import investigation_fingerprint
+
+        return investigation_fingerprint(error_message, service, environment)
 
     def get(self, key: str) -> Optional[Any]:
         with self._lock:

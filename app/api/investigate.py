@@ -129,8 +129,7 @@ async def execute_investigation(
     cache: TTLCache,
 ) -> InvestigateResponse:
 
-    deploy_sha = payload.context.deploy_sha if payload.context else None
-    cache_key = TTLCache.make_key(payload.error_message, payload.service, deploy_sha)
+    cache_key = TTLCache.make_key(payload.error_message, payload.service, payload.environment)
     cached_response = cache.get(cache_key)
     if cached_response is not None:
         return cached_response.model_copy(update={"cached": True})

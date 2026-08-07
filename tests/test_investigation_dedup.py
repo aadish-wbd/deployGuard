@@ -4,13 +4,31 @@ from app.services.investigation_dedup import existing_rca_summary, find_existing
 
 
 def test_investigation_fingerprint_label_is_stable():
-    label1 = investigation_fingerprint_label("boom", "payment-api", "abc123")
-    label2 = investigation_fingerprint_label("boom", "payment-api", "abc123")
-    label3 = investigation_fingerprint_label("boom", "payment-api", "abc124")
+    label1 = investigation_fingerprint_label("boom", "payment-api", "production")
+    label2 = investigation_fingerprint_label("boom", "payment-api", "production")
+    label3 = investigation_fingerprint_label("boom", "auth-api", "production")
 
     assert label1 == label2
     assert label1.startswith("dgfp")
     assert label1 != label3
+
+
+def test_investigation_fingerprint_ignores_deploy_sha():
+    from app.core.investigation_fingerprint import investigation_fingerprint
+
+    fp1 = investigation_fingerprint(
+        "NullPointerException: PAYMENT_URL is null", "payment-api", "production"
+    )
+    fp2 = investigation_fingerprint(
+        "NullPointerException: PAYMENT_URL is null", "payment-api", "production"
+    )
+    assert fp1 == fp2
+
+
+def test_investigation_fingerprint_differs_by_environment():
+    prod = investigation_fingerprint_label("boom", "payment-api", "production")
+    staging = investigation_fingerprint_label("boom", "payment-api", "staging")
+    assert prod != staging
 
 
 def test_existing_rca_summary_mentions_ticket():

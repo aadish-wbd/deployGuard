@@ -24,7 +24,9 @@ def test_issue_labels_include_fingerprint():
 
     assert "deployguard" in labels
     assert "payment-api" in labels
-    assert investigation_fingerprint_label(request.error_message, request.service, "abc123") in labels
+    assert investigation_fingerprint_label(
+        request.error_message, request.service, request.environment
+    ) in labels
 
 
 def test_build_description_returns_adf_doc():

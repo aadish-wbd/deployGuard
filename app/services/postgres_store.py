@@ -185,7 +185,7 @@ class PostgresIncidentStore:
         *,
         error_message: str,
         service: str,
-        deploy_sha: Optional[str],
+        environment: str,
     ) -> Optional["ExistingInvestigation"]:
         from app.models.schemas import ExistingInvestigation
 
@@ -203,7 +203,7 @@ class PostgresIncidentStore:
             FROM incidents
             WHERE error_message = %s
               AND service = %s
-              AND COALESCE(deploy_sha, '') = COALESCE(%s, '')
+              AND environment = %s
               AND jira_ticket IS NOT NULL
               AND investigation_status::text = 'completed'
             ORDER BY occurred_at DESC
@@ -211,7 +211,7 @@ class PostgresIncidentStore:
         """
         with self._connection() as conn:
             with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-                cur.execute(query, (error_message, service, deploy_sha))
+                cur.execute(query, (error_message, service, environment))
                 row = cur.fetchone()
         if row is None:
             return None
