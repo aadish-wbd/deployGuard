@@ -180,6 +180,58 @@ class PostgresIncidentStore:
             with conn.cursor() as cur:
                 cur.execute(_INSERT_INCIDENT, params)
 
+    def find_existing_jira(
+        self,
+        *,
+        error_message: str,
+        service: str,
+        deploy_sha: Optional[str],
+    ) -> Optional["ExistingInvestigation"]:
+        from app.models.schemas import ExistingInvestigation
+
+        query = """
+            SELECT
+                investigation_id::text,
+                jira_ticket,
+                jira_url,
+                root_cause,
+                confidence,
+                rca_summary,
+                suggested_fix,
+                evidence,
+                s3_report_uri
+            FROM incidents
+            WHERE error_message = %s
+              AND service = %s
+              AND COALESCE(deploy_sha, '') = COALESCE(%s, '')
+              AND jira_ticket IS NOT NULL
+              AND investigation_status::text = 'completed'
+            ORDER BY occurred_at DESC
+            LIMIT 1
+        """
+        with self._connection() as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute(query, (error_message, service, deploy_sha))
+                row = cur.fetchone()
+        if row is None:
+            return None
+
+        evidence = row["evidence"]
+        if isinstance(evidence, str):
+            evidence = json.loads(evidence)
+
+        return ExistingInvestigation(
+            investigation_id=row["investigation_id"],
+            jira_ticket=row["jira_ticket"],
+            jira_url=row["jira_url"],
+            root_cause=row["root_cause"],
+            confidence=float(row["confidence"]) if row["confidence"] is not None else None,
+            rca_summary=row["rca_summary"],
+            suggested_fix=row["suggested_fix"],
+            evidence=evidence or [],
+            s3_report_url=row["s3_report_uri"],
+        )
+
     def get(self, investigation_id: str) -> Optional[IncidentRecord]:
         query = """
             SELECT

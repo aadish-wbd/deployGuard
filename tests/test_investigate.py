@@ -56,6 +56,39 @@ def test_investigate_oversized_body_rejected(client):
     assert "exceeds" in response.json()["detail"]
 
 
+def test_investigate_reuses_existing_jira_ticket(client, fakes):
+    from app.models.schemas import ExistingInvestigation
+    from tests.conftest import FakePostgresStore
+
+    existing = ExistingInvestigation(
+        investigation_id="prior-123",
+        jira_ticket="KAN-99",
+        jira_url="https://jira.example.com/browse/KAN-99",
+        root_cause="Missing PAYMENT_URL",
+        confidence=0.91,
+        rca_summary="Already investigated.",
+        suggested_fix="Restore PAYMENT_URL",
+        evidence=["line 42"],
+        s3_report_url="s3://bucket/prior/",
+    )
+    client.app.state.postgres_store = FakePostgresStore(existing=existing)
+
+    response = client.post("/api/v1/investigate", json=VALID_PAYLOAD)
+    assert response.status_code == 200
+
+    body = response.json()
+    assert body["existing_ticket"] is True
+    assert body["actions"]["jira_reused"] is True
+    assert body["actions"]["jira_created"] is False
+    assert body["actions"]["slack_sent"] is False
+    assert body["actions"]["jira_ticket"] == "KAN-99"
+    assert body["investigation_id"] == "prior-123"
+    assert len(fakes["bedrock"].invocations) == 0
+    assert len(fakes["jira"].calls) == 0
+    assert len(fakes["slack"].calls) == 0
+    assert len(fakes["s3"].saved) == 0
+
+
 def test_investigate_dedup_cache_hit_skips_second_bedrock_call(client, fakes):
     first = client.post("/api/v1/investigate", json=VALID_PAYLOAD)
     second = client.post("/api/v1/investigate", json=VALID_PAYLOAD)

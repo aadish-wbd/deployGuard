@@ -75,7 +75,22 @@ class ActionsTaken(BaseModel):
     jira_ticket: Optional[str] = None
     jira_url: Optional[str] = None
     jira_created: bool = False
+    jira_reused: bool = False
     slack_sent: bool = False
+
+
+class ExistingInvestigation(BaseModel):
+    """Prior completed investigation for the same error fingerprint."""
+
+    jira_ticket: str
+    jira_url: str
+    investigation_id: Optional[str] = None
+    root_cause: Optional[str] = None
+    confidence: Optional[float] = None
+    rca_summary: Optional[str] = None
+    suggested_fix: Optional[str] = None
+    evidence: List[str] = Field(default_factory=list)
+    s3_report_url: Optional[str] = None
 
 
 class InvestigateResponse(BaseModel):
@@ -90,6 +105,7 @@ class InvestigateResponse(BaseModel):
     actions: ActionsTaken = Field(default_factory=ActionsTaken)
     error_detail: Optional[str] = None
     cached: bool = False
+    existing_ticket: bool = False
 
 
 class HealthResponse(BaseModel):

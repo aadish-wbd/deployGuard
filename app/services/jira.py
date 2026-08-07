@@ -11,8 +11,9 @@ from typing import Any, Optional
 import httpx
 
 from app.config import Settings
+from app.core.investigation_fingerprint import investigation_fingerprint_label
 from app.core.logging_config import get_logger
-from app.models.schemas import BedrockRcaOutput, InvestigateRequest
+from app.models.schemas import BedrockRcaOutput, ExistingInvestigation, InvestigateRequest
 
 logger = get_logger(__name__)
 
@@ -230,6 +231,15 @@ def _build_description(rca: BedrockRcaOutput) -> dict:
     return {"type": "doc", "version": 1, "content": content}
 
 
+def _issue_labels(request: InvestigateRequest) -> list[str]:
+    deploy_sha = request.context.deploy_sha if request.context else None
+    return [
+        "deployguard",
+        request.service,
+        investigation_fingerprint_label(request.error_message, request.service, deploy_sha),
+    ]
+
+
 class JiraClient:
     def __init__(self, settings: Settings):
         self._settings = settings
@@ -330,6 +340,41 @@ class JiraClient:
         assert last_error is not None
         raise last_error
 
+    def find_existing_ticket(self, request: InvestigateRequest) -> Optional[ExistingInvestigation]:
+        """Find the newest JIRA ticket for this error fingerprint, if any."""
+        settings = self._settings
+        if not settings.jira_base_url or not settings.jira_email or not settings.jira_api_token:
+            return None
+
+        deploy_sha = request.context.deploy_sha if request.context else None
+        fp_label = investigation_fingerprint_label(request.error_message, request.service, deploy_sha)
+        jql = (
+            f'project = "{settings.jira_project_key}" AND labels = deployguard '
+            f'AND labels = "{fp_label}" ORDER BY created DESC'
+        )
+
+        try:
+            response = httpx.get(
+                _jira_api_url(self._rest_base, "/rest/api/3/search/jql"),
+                params={"jql": jql, "maxResults": 1, "fields": "summary,status"},
+                auth=self._auth(),
+                timeout=10.0,
+            )
+            response.raise_for_status()
+        except httpx.HTTPError as exc:
+            raise JiraError(f"JIRA search failed: {exc}") from exc
+
+        issues = response.json().get("issues", [])
+        if not issues:
+            return None
+
+        issue = issues[0]
+        ticket_key = issue["key"]
+        return ExistingInvestigation(
+            jira_ticket=ticket_key,
+            jira_url=_jira_browse_url(settings, ticket_key),
+        )
+
     def create_ticket(self, request: InvestigateRequest, rca: BedrockRcaOutput) -> tuple[str, str]:
         summary = f"[{request.service}] {rca.root_cause}"[:255]
         try:
@@ -337,7 +382,7 @@ class JiraClient:
                 summary=summary,
                 description=_build_description(rca),
                 priority=_derive_priority(request, rca.confidence),
-                labels=["deployguard", request.service],
+                labels=_issue_labels(request),
             )
         except JiraError:
             raise

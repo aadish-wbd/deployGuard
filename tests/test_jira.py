@@ -1,9 +1,35 @@
+from unittest.mock import MagicMock, patch
+
 from app.config import Settings
-from app.models.schemas import BedrockRcaOutput
-from app.services.jira import _build_description, plain_text_to_adf, resolve_jira_rest_base
+from app.core.investigation_fingerprint import investigation_fingerprint_label
+from app.models.schemas import InvestigateRequest
+from app.services.jira import (
+    JiraClient,
+    _build_description,
+    _issue_labels,
+    plain_text_to_adf,
+    resolve_jira_rest_base,
+)
+
+
+def test_issue_labels_include_fingerprint():
+    request = InvestigateRequest(
+        error_message="NullPointerException: PAYMENT_URL is null",
+        service="payment-api",
+        environment="production",
+        context={"deploy_sha": "abc123"},
+    )
+
+    labels = _issue_labels(request)
+
+    assert "deployguard" in labels
+    assert "payment-api" in labels
+    assert investigation_fingerprint_label(request.error_message, request.service, "abc123") in labels
 
 
 def test_build_description_returns_adf_doc():
+    from app.models.schemas import BedrockRcaOutput
+
     rca = BedrockRcaOutput(
         root_cause="PAYMENT_URL is null",
         confidence=0.88,
@@ -50,3 +76,31 @@ def test_plain_text_to_adf_parses_bullet_blocks():
     bullet = next(node for node in doc["content"] if node["type"] == "bulletList")
     items = [item["content"][0]["content"][0]["text"] for item in bullet["content"]]
     assert items == ["first", "second"]
+
+
+@patch("app.services.jira.httpx.get")
+def test_find_existing_ticket_uses_search_jql_endpoint(mock_get):
+    mock_response = MagicMock()
+    mock_response.raise_for_status.return_value = None
+    mock_response.json.return_value = {"issues": [{"key": "KAN-25"}]}
+    mock_get.return_value = mock_response
+
+    settings = Settings(
+        jira_base_url="https://example.atlassian.net",
+        jira_email="user@example.com",
+        jira_api_token="token",
+        jira_project_key="KAN",
+    )
+    request = InvestigateRequest(
+        error_message="NullPointerException: PAYMENT_URL is null",
+        service="payment-api",
+        environment="production",
+        context={"deploy_sha": "abc124"},
+    )
+
+    found = JiraClient(settings).find_existing_ticket(request)
+
+    assert found is not None
+    assert found.jira_ticket == "KAN-25"
+    assert mock_get.call_count == 1
+    assert "/rest/api/3/search/jql" in mock_get.call_args.args[0]

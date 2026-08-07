@@ -31,6 +31,7 @@ from app.dependencies import (
 from app.models.incident import IncidentMetadata, IncidentRecord
 from app.models.schemas import ActionsTaken, InvestigateRequest, InvestigateResponse
 from app.services.bedrock import BedrockAgentClient, BedrockInvocationError
+from app.services.investigation_dedup import existing_rca_summary, find_existing_investigation
 from app.services.jira import JiraClient, JiraError
 from app.services.postgres_store import PostgresIncidentStore, s3_uris_for_record
 from app.services.s3_store import S3IncidentStore
@@ -38,6 +39,34 @@ from app.services.slack import SlackClient, SlackError
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/api/v1")
+
+
+def _response_from_existing_investigation(
+    existing,
+    *,
+    investigation_id: str,
+    cached: bool = False,
+) -> InvestigateResponse:
+    summary = existing.rca_summary or existing_rca_summary(existing.jira_ticket)
+    return InvestigateResponse(
+        investigation_id=existing.investigation_id or investigation_id,
+        status="completed",
+        root_cause=existing.root_cause,
+        confidence=existing.confidence,
+        rca_summary=summary,
+        evidence=existing.evidence,
+        suggested_fix=existing.suggested_fix,
+        s3_report_url=existing.s3_report_url,
+        actions=ActionsTaken(
+            jira_ticket=existing.jira_ticket,
+            jira_url=existing.jira_url,
+            jira_created=False,
+            jira_reused=True,
+            slack_sent=False,
+        ),
+        existing_ticket=True,
+        cached=cached,
+    )
 
 
 async def _parse_request(request: Request, settings: Settings) -> InvestigateRequest:
@@ -105,6 +134,24 @@ async def execute_investigation(
     cached_response = cache.get(cache_key)
     if cached_response is not None:
         return cached_response.model_copy(update={"cached": True})
+
+    existing = find_existing_investigation(
+        payload,
+        settings,
+        jira_client=jira_client,
+        postgres_store=postgres_store,
+    )
+    if existing is not None:
+        response = _response_from_existing_investigation(
+            existing,
+            investigation_id=str(uuid.uuid4()),
+        )
+        cache.set(cache_key, response)
+        logger.info(
+            "investigation_existing_ticket_reused",
+            extra={"jira_ticket": existing.jira_ticket, "service": payload.service},
+        )
+        return response.model_copy(update={"cached": False})
 
     daily_cap = request.app.state.daily_cap
     if not daily_cap.try_consume():

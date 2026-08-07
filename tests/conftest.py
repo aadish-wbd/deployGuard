@@ -30,9 +30,15 @@ class FakeBedrockClient:
 
 
 class FakeJiraClient:
-    def __init__(self, error: Optional[Exception] = None):
+    def __init__(self, error: Optional[Exception] = None, existing: Optional[object] = None):
         self._error = error
+        self._existing = existing
         self.calls = []
+        self.find_calls = []
+
+    def find_existing_ticket(self, request):
+        self.find_calls.append(request)
+        return self._existing
 
     def create_ticket(self, request, rca):
         self.calls.append((request, rca))
@@ -71,11 +77,15 @@ class FakeS3Store:
 
 
 class FakePostgresStore:
-    def __init__(self):
+    def __init__(self, existing=None):
         self.saved = []
+        self._existing = existing
 
     def ping(self) -> bool:
         return True
+
+    def find_existing_jira(self, *, error_message, service, deploy_sha):
+        return self._existing
 
     def save(self, record, *, rca_s3_uri: str, s3_report_uri: str) -> None:
         self.saved.append((record, rca_s3_uri, s3_report_uri))
