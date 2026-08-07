@@ -83,7 +83,14 @@ def _derive_issue_type(rca: BedrockRcaOutput, settings: Settings) -> str:
         if normalized:
             return normalized
 
-    text = f"{rca.root_cause} {rca.rca_summary} {rca.suggested_fix}".lower()
+    text = " ".join(
+        [
+            rca.root_cause,
+            rca.rca_summary,
+            rca.suggested_fix,
+            " ".join(rca.evidence),
+        ]
+    ).lower()
     if any(signal in text for signal in _INCIDENT_SIGNALS):
         return "Incident"
     if any(signal in text for signal in _BUG_SIGNALS):

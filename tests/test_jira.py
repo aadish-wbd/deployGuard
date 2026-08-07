@@ -156,6 +156,21 @@ def test_derive_issue_type_heuristic_incident():
     assert _derive_issue_type(rca, settings) == "Incident"
 
 
+def test_derive_issue_type_heuristic_bug_from_evidence_only():
+    from app.models.schemas import BedrockRcaOutput
+
+    settings = Settings(jira_issue_type="Task")
+    rca = BedrockRcaOutput(
+        root_cause="Payment API degraded",
+        confidence=0.8,
+        evidence=["500 internal server error on /checkout"],
+        rca_summary="Checkout failures observed after deploy.",
+        suggested_fix="Roll back deploy.",
+    )
+
+    assert _derive_issue_type(rca, settings) == "Bug"
+
+
 @patch("app.services.jira.httpx.post")
 def test_create_ticket_uses_rca_issue_type(mock_post):
     from app.models.schemas import BedrockRcaOutput
