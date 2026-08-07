@@ -10,7 +10,7 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
-from app.models.schemas import ActionsTaken, InvestigateRequest, TriggeredBy
+from app.models.schemas import ActionsTaken, InvestigateRequest, TriggeredBy, WorkflowStatus
 
 
 class IncidentMetadata(BaseModel):
@@ -37,6 +37,7 @@ class IncidentRecord(BaseModel):
 
     actions: ActionsTaken = Field(default_factory=ActionsTaken)
     metadata: IncidentMetadata
+    workflow_status: WorkflowStatus = "open"
 
     def s3_prefix(self) -> str:
         return f"{self.timestamp.year:04d}/{self.timestamp.month:02d}/{self.investigation_id}"

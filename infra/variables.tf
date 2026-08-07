@@ -34,6 +34,34 @@ variable "allowed_cidr_blocks" {
   default     = ["0.0.0.0/0"]
 }
 
+variable "domain_name" {
+  description = "Custom domain for HTTPS (e.g. deployguard.example.com). Leave empty to keep HTTP-only on the ALB DNS name."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = var.acm_certificate_arn == "" || var.domain_name != ""
+    error_message = "domain_name is required when acm_certificate_arn is set."
+  }
+
+  validation {
+    condition     = var.domain_name == "" || var.acm_certificate_arn != "" || var.route53_zone_id != ""
+    error_message = "route53_zone_id is required when domain_name is set unless acm_certificate_arn is provided."
+  }
+}
+
+variable "route53_zone_id" {
+  description = "Route 53 hosted zone ID for domain_name — enables ACM DNS validation and an ALB alias record"
+  type        = string
+  default     = ""
+}
+
+variable "acm_certificate_arn" {
+  description = "Existing validated ACM certificate ARN in the same region as the ALB. If empty, Terraform requests a cert when domain_name is set."
+  type        = string
+  default     = ""
+}
+
 variable "vpc_cidr" {
   description = "CIDR for the dedicated VPC (created because many enterprise accounts have no default VPC)"
   type        = string

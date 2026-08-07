@@ -3,6 +3,7 @@ import type {
   HealthResponse,
   IncidentListResponse,
   IncidentRecord,
+  WorkflowStatus,
 } from "./types";
 
 class ApiError extends Error {
@@ -65,6 +66,38 @@ export async function fetchIncidents(params: {
 
 export async function fetchIncident(id: string): Promise<IncidentRecord> {
   return request<IncidentRecord>(`/api/v1/incidents/${id}`);
+}
+
+export async function updateIncidentWorkflowStatus(
+  id: string,
+  workflowStatus: WorkflowStatus,
+): Promise<IncidentRecord> {
+  return request<IncidentRecord>(`/api/v1/incidents/${id}/workflow-status`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ workflow_status: workflowStatus }),
+  });
+}
+
+export async function downloadRcaReport(id: string): Promise<void> {
+  const response = await fetch(`/api/v1/incidents/${id}/rca`);
+  if (!response.ok) {
+    let detail = response.statusText;
+    try {
+      const body = (await response.json()) as { detail?: unknown };
+      if (typeof body.detail === "string") detail = body.detail;
+    } catch {
+      /* ignore */
+    }
+    throw new ApiError(response.status, detail);
+  }
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `rca-${id}.md`;
+  anchor.click();
+  URL.revokeObjectURL(url);
 }
 
 export { ApiError };

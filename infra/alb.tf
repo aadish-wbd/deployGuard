@@ -31,6 +31,31 @@ resource "aws_lb_listener" "http" {
   protocol          = "HTTP"
 
   default_action {
+    type = local.tls_enabled ? "redirect" : "forward"
+
+    dynamic "redirect" {
+      for_each = local.tls_enabled ? [1] : []
+      content {
+        port        = "443"
+        protocol    = "HTTPS"
+        status_code = "HTTP_301"
+      }
+    }
+
+    target_group_arn = local.tls_enabled ? null : aws_lb_target_group.app.arn
+  }
+}
+
+resource "aws_lb_listener" "https" {
+  count = local.tls_enabled ? 1 : 0
+
+  load_balancer_arn = aws_lb.app.arn
+  port              = 443
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-T13-1-2-2021-06"
+  certificate_arn   = local.certificate_arn
+
+  default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.app.arn
   }

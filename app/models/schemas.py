@@ -184,6 +184,10 @@ class IncidentListResponse(BaseModel):
     next_page_token: Optional[str] = None
 
 
+class UpdateWorkflowStatusRequest(BaseModel):
+    workflow_status: WorkflowStatus
+
+
 class DatabricksRunContextRequest(BaseModel):
     """Fetch failure context from a Databricks job run (step 1 of 2)."""
 

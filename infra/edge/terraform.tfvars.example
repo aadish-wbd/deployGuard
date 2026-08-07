@@ -1,0 +1,11 @@
+aws_region  = "us-east-1"
+environment = "dev"
+
+domain_name     = "deployguard.cmp.wbdisc.com"
+route53_zone_id = "Z0792872ZIJIU0AX756K"
+
+# Public DNS name of the DeployGuard ALB (HTTP origin in the hackathon account)
+origin_dns_name = "deployguard-dev-alb-1213203056.us-east-1.elb.amazonaws.com"
+
+# Validated wildcard cert for *.cmp.wbdisc.com in us-east-1
+acm_certificate_arn = "arn:aws:acm:us-east-1:997752499174:certificate/84ef02ca-3b9c-4c5f-8965-c1d3f1c298f9"

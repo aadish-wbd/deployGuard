@@ -2,12 +2,14 @@
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import Response
 
 from app.config import Settings
 from app.dependencies import get_postgres_store, get_s3_store, get_settings_dep
 from app.models.incident import IncidentRecord
-from app.models.schemas import IncidentListResponse
+from app.models.schemas import IncidentListResponse, UpdateWorkflowStatusRequest
 from app.services.postgres_store import PostgresIncidentStore
+from app.services.rca import build_rca_markdown
 from app.services.s3_store import S3IncidentStore
 
 router = APIRouter(prefix="/api/v1/incidents")
@@ -68,3 +70,39 @@ def get_incident(
     if record is None:
         raise HTTPException(status_code=404, detail=f"Incident {investigation_id} not found")
     return record
+
+
+@router.patch("/{investigation_id}/workflow-status", response_model=IncidentRecord)
+def update_workflow_status(
+    investigation_id: str,
+    body: UpdateWorkflowStatusRequest,
+    postgres_store: Optional[PostgresIncidentStore] = Depends(get_postgres_store),
+) -> IncidentRecord:
+    if postgres_store is None:
+        raise HTTPException(status_code=503, detail="Workflow status updates require PostgreSQL")
+    try:
+        record = postgres_store.update_workflow_status(investigation_id, body.workflow_status)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="Failed to update workflow status") from exc
+    if record is None:
+        raise HTTPException(status_code=404, detail=f"Incident {investigation_id} not found")
+    return record
+
+
+@router.get("/{investigation_id}/rca")
+def download_rca_report(
+    investigation_id: str,
+    postgres_store: Optional[PostgresIncidentStore] = Depends(get_postgres_store),
+    s3_store: S3IncidentStore = Depends(get_s3_store),
+) -> Response:
+    record = _get_incident(investigation_id, postgres_store, s3_store)
+    if record is None:
+        raise HTTPException(status_code=404, detail=f"Incident {investigation_id} not found")
+    if record.metadata.status != "completed":
+        raise HTTPException(status_code=400, detail="RCA report is only available for completed investigations")
+    markdown = build_rca_markdown(record)
+    return Response(
+        content=markdown,
+        media_type="text/markdown",
+        headers={"Content-Disposition": f'attachment; filename="rca-{investigation_id}.md"'},
+    )

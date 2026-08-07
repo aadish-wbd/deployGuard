@@ -5,7 +5,7 @@ Creates AWS infrastructure for the DeployGuard API:
 | Resource | Purpose |
 |---|---|
 | EC2 | Runs FastAPI via systemd |
-| ALB | Public HTTP entry, `/health` checks |
+| ALB | Public HTTP/HTTPS entry, `/health` checks |
 | S3 | Incident reports |
 | Aurora PostgreSQL | Dashboard incident store (`db.t4g.medium`, same VPC as EC2) |
 | Secrets Manager | JIRA + Slack + database credentials |

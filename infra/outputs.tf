@@ -1,26 +1,41 @@
+output "public_base_url" {
+  description = "Public base URL (https:// when domain_name is set, otherwise http:// ALB DNS)"
+  value       = local.public_base_url
+}
+
 output "alb_dns_name" {
   description = "Public ALB URL — use as HOST for curl / client integrations"
-  value       = "http://${aws_lb.app.dns_name}"
+  value       = local.public_base_url
 }
 
 output "health_check_url" {
   description = "Health endpoint"
-  value       = "http://${aws_lb.app.dns_name}/health"
+  value       = "${local.public_base_url}/health"
 }
 
 output "investigate_url" {
   description = "Main investigation endpoint"
-  value       = "http://${aws_lb.app.dns_name}/api/v1/investigate"
+  value       = "${local.public_base_url}/api/v1/investigate"
 }
 
 output "dashboard_stats_url" {
   description = "Dashboard KPI aggregates (requires Postgres)"
-  value       = "http://${aws_lb.app.dns_name}/api/v1/dashboard/stats"
+  value       = "${local.public_base_url}/api/v1/dashboard/stats"
 }
 
 output "databricks_webhook_url" {
   description = "Configure this URL in Databricks job failure webhook notifications"
-  value       = "http://${aws_lb.app.dns_name}/api/v1/databricks/webhook"
+  value       = "${local.public_base_url}/api/v1/databricks/webhook"
+}
+
+output "alb_dns_name_raw" {
+  description = "Raw ALB DNS name (before custom domain alias)"
+  value       = aws_lb.app.dns_name
+}
+
+output "acm_certificate_arn" {
+  description = "ACM certificate attached to the HTTPS listener (empty when HTTP-only)"
+  value       = local.tls_enabled ? local.certificate_arn : ""
 }
 
 output "ec2_instance_id" {

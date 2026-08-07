@@ -253,13 +253,49 @@ class PostgresIncidentStore:
                 jira_ticket,
                 jira_url,
                 jira_created,
-                slack_sent
+                slack_sent,
+                workflow_status::text
             FROM incidents
             WHERE investigation_id = %s
         """
         with self._connection() as conn:
             with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
                 cur.execute(query, (investigation_id,))
+                row = cur.fetchone()
+        if row is None:
+            return None
+        return _row_to_incident_record(row)
+
+    def update_workflow_status(self, investigation_id: str, workflow_status: str) -> Optional[IncidentRecord]:
+        query = """
+            UPDATE incidents
+            SET workflow_status = %s
+            WHERE investigation_id = %s
+            RETURNING
+                investigation_id::text,
+                occurred_at,
+                service,
+                environment,
+                input_payload,
+                root_cause,
+                confidence,
+                evidence,
+                rca_summary,
+                suggested_fix,
+                error_detail,
+                investigation_status::text,
+                triggered_by::text,
+                latency_ms,
+                token_estimate,
+                jira_ticket,
+                jira_url,
+                jira_created,
+                slack_sent,
+                workflow_status::text
+        """
+        with self._connection() as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute(query, (workflow_status, investigation_id))
                 row = cur.fetchone()
         if row is None:
             return None
@@ -380,6 +416,7 @@ def _row_to_incident_record(row: dict[str, Any]) -> IncidentRecord:
             triggered_by=row["triggered_by"],
             status=row["investigation_status"],
         ),
+        workflow_status=row.get("workflow_status") or "open",
     )
 
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { fetchIncident } from "../api/client";
+import { downloadRcaReport, fetchIncident, updateIncidentWorkflowStatus } from "../api/client";
 import { ConfidenceMeter, InvestigationBadge, SeverityBadge, WorkflowBadge } from "../components/Badges";
 import type { IncidentRecord } from "../types";
 import { formatDate, formatConfidence } from "../utils/format";
@@ -10,6 +10,9 @@ export function IncidentDetailPage() {
   const [incident, setIncident] = useState<IncidentRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [closing, setClosing] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -20,6 +23,33 @@ export function IncidentDetailPage() {
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load incident"))
       .finally(() => setLoading(false));
   }, [id]);
+
+  async function handleCloseIncident() {
+    if (!id || !incident) return;
+    setClosing(true);
+    setActionError(null);
+    try {
+      const updated = await updateIncidentWorkflowStatus(id, "closed");
+      setIncident(updated);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Failed to close incident");
+    } finally {
+      setClosing(false);
+    }
+  }
+
+  async function handleDownloadRca() {
+    if (!id) return;
+    setDownloading(true);
+    setActionError(null);
+    try {
+      await downloadRcaReport(id);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Failed to download RCA report");
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   if (loading) {
     return <div className="panel detail-panel loading-state">Loading incident…</div>;
@@ -37,6 +67,9 @@ export function IncidentDetailPage() {
   }
 
   const severity = incident.input.context?.severity;
+  const workflowStatus = incident.workflow_status ?? "open";
+  const canClose = workflowStatus === "open";
+  const canDownloadRca = incident.metadata.status === "completed";
 
   return (
     <div className="detail-page">
@@ -52,7 +85,7 @@ export function IncidentDetailPage() {
           </div>
           <div className="detail-badges">
             <InvestigationBadge status={incident.metadata.status} />
-            <WorkflowBadge status="open" />
+            <WorkflowBadge status={workflowStatus} />
             <SeverityBadge severity={severity} />
           </div>
         </div>
@@ -74,6 +107,23 @@ export function IncidentDetailPage() {
             <strong>{incident.metadata.latency_ms} ms</strong>
           </div>
         </div>
+        <div className="detail-actions">
+          {canClose ? (
+            <button type="button" className="btn btn-primary" disabled={closing} onClick={handleCloseIncident}>
+              {closing ? "Closing…" : "Close incident"}
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="btn btn-secondary"
+            disabled={!canDownloadRca || downloading}
+            onClick={handleDownloadRca}
+            title={canDownloadRca ? "Download RCA report as Markdown" : "RCA report unavailable for failed investigations"}
+          >
+            {downloading ? "Downloading…" : "Download RCA report"}
+          </button>
+        </div>
+        {actionError ? <p className="error-banner detail-action-error">{actionError}</p> : null}
       </div>
 
       <div className="detail-grid">

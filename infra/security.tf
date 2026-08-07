@@ -11,6 +11,17 @@ resource "aws_security_group" "alb" {
     cidr_blocks = var.allowed_cidr_blocks
   }
 
+  dynamic "ingress" {
+    for_each = local.tls_enabled ? [1] : []
+    content {
+      description = "HTTPS from allowed CIDRs"
+      from_port   = 443
+      to_port     = 443
+      protocol    = "tcp"
+      cidr_blocks = var.allowed_cidr_blocks
+    }
+  }
+
   egress {
     from_port   = 0
     to_port     = 0

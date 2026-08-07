@@ -10,7 +10,7 @@ How to provision infrastructure with Terraform and deploy application code to EC
 Internet
    │
    ▼
-Application Load Balancer (:80)
+Application Load Balancer (:80, :443 when domain_name is set)
    │  health check → GET /health
    ▼
 EC2 (Amazon Linux 2023)
@@ -53,7 +53,57 @@ bedrock_agent_id       = "ABCDEF1234"
 bedrock_agent_alias_id = "YOUR_ALIAS_ID"
 jira_base_url          = "https://yourteam.atlassian.net"
 allowed_cidr_blocks    = ["YOUR.IP.ADDRESS/32"]   # restrict ALB access
+
+# Optional HTTPS — domain must be in Route 53 (or provide acm_certificate_arn)
+# domain_name     = "deployguard.yourdomain.com"
+# route53_zone_id = "Z0123456789ABCDEFGHIJ"
 ```
+
+---
+
+## Step 1b — Enable HTTPS (optional)
+
+Set a custom domain in `terraform.tfvars`:
+
+```hcl
+domain_name     = "deployguard.yourdomain.com"
+route53_zone_id = "Z0123456789ABCDEFGHIJ"   # hosted zone for yourdomain.com
+```
+
+On `terraform apply`, Terraform will:
+
+1. Request an ACM certificate for `domain_name`
+2. Create Route 53 validation records and wait for issuance
+3. Point the domain at the ALB (alias A record)
+4. Add an HTTPS listener on `:443` and redirect `:80` → `:443`
+
+If you already have a validated ACM cert in the same region:
+
+```hcl
+domain_name         = "deployguard.yourdomain.com"
+acm_certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/..."
+route53_zone_id     = "Z0123456789ABCDEFGHIJ"   # still needed for the ALB alias record
+```
+
+After apply:
+
+```bash
+terraform output public_base_url
+# https://deployguard.yourdomain.com
+```
+
+Leave `domain_name` empty to keep the default HTTP-only ALB URL.
+
+**Cross-account note:** If the DeployGuard ALB runs in a different AWS account than your Route 53 zone (e.g. hackathon account `657246005217` vs WBD account `997752499174`), use the edge stack instead of ALB HTTPS:
+
+```bash
+cd infra/edge
+cp terraform.tfvars.example terraform.tfvars   # edit origin + domain if needed
+terraform init && terraform apply
+terraform output public_base_url
+```
+
+This creates CloudFront + Route 53 in the DNS account, terminating TLS with your existing `*.cmp.wbdisc.com` ACM certificate and proxying to the HTTP ALB origin.
 
 ---
 

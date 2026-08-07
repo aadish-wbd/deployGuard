@@ -99,6 +99,7 @@ export interface IncidentRecord {
   error_detail?: string | null;
   actions: ActionsTaken;
   metadata: IncidentMetadata;
+  workflow_status?: WorkflowStatus;
 }
 
 export interface HealthResponse {

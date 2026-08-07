@@ -35,6 +35,12 @@ databricks_default_environment = "dev"
 # Optional SSH key (SSM deploy works without it)
 # key_name = "your-keypair"
 
+# HTTPS (optional — requires Route 53 for automatic cert validation and DNS alias)
+# domain_name     = "deployguard.example.com"
+# route53_zone_id = "Z0123456789ABCDEFGHIJ"
+# Or attach an existing validated ACM certificate in the same region:
+# acm_certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/..."
+
 # Secrets only — update in Secrets Manager console after apply, or override here:
 # secrets_placeholder = {
 #   jira_email               = "you@company.com"

@@ -154,13 +154,32 @@ select {
   font-size: 0.85rem;
 }
 
-.page-header,
-.detail-header {
+.page-header {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
   align-items: flex-start;
   margin-bottom: 1.5rem;
+}
+
+.detail-header {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.detail-action-error {
+  margin: 0;
+  width: 100%;
 }
 
 .eyebrow {
@@ -337,6 +356,12 @@ h1 {
   background: var(--accent-soft);
   color: #bfdbfe;
   border: 1px solid rgba(59, 130, 246, 0.35);
+}
+
+.btn-primary {
+  background: #2563eb;
+  color: #eff6ff;
+  border: 1px solid rgba(37, 99, 235, 0.6);
 }
 
 .btn-ghost {

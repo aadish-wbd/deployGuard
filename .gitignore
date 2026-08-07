@@ -3,6 +3,10 @@ infra/terraform.tfvars
 infra/.terraform/
 infra/*.tfstate
 infra/*.tfstate.*
+infra/edge/.terraform/
+infra/edge/*.tfstate
+infra/edge/*.tfstate.*
+infra/edge/terraform.tfvars
 .venv/
 venv/
 __pycache__/

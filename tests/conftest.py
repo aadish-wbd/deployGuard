@@ -80,6 +80,7 @@ class FakePostgresStore:
     def __init__(self, existing=None):
         self.saved = []
         self._existing = existing
+        self._workflow_status: dict[str, str] = {}
 
     def ping(self) -> bool:
         return True
@@ -89,11 +90,21 @@ class FakePostgresStore:
 
     def save(self, record, *, rca_s3_uri: str, s3_report_uri: str) -> None:
         self.saved.append((record, rca_s3_uri, s3_report_uri))
+        self._workflow_status.setdefault(record.investigation_id, "open")
 
     def get(self, investigation_id: str):
         for record, _, _ in self.saved:
             if record.investigation_id == investigation_id:
-                return record
+                return record.model_copy(
+                    update={"workflow_status": self._workflow_status.get(investigation_id, "open")}
+                )
+        return None
+
+    def update_workflow_status(self, investigation_id: str, workflow_status: str):
+        for record, _, _ in self.saved:
+            if record.investigation_id == investigation_id:
+                self._workflow_status[investigation_id] = workflow_status
+                return record.model_copy(update={"workflow_status": workflow_status})
         return None
 
     def list(self, service=None, status=None, limit=20, page_token=None) -> IncidentListResponse:
