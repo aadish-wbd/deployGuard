@@ -16,7 +16,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 -- Enum types
 -- ---------------------------------------------------------------------------
 
-CREATE TYPE triggered_by AS ENUM ('databricks', 'ec2', 'manual');
+CREATE TYPE triggered_by AS ENUM ('databricks', 'ec2', 'manual', 'cloudwatch_alarm');
 
 CREATE TYPE severity_level AS ENUM ('low', 'medium', 'high', 'critical');
 

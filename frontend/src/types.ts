@@ -1,7 +1,7 @@
 export type InvestigationStatus = "completed" | "failed";
 export type WorkflowStatus = "open" | "in_progress" | "resolved" | "closed";
 export type Severity = "low" | "medium" | "high" | "critical";
-export type TriggeredBy = "databricks" | "ec2" | "manual";
+export type TriggeredBy = "databricks" | "ec2" | "manual" | "cloudwatch_alarm";
 
 export interface IncidentSummary {
   investigation_id: string;
@@ -40,6 +40,17 @@ export interface DashboardStats {
   by_severity: Record<string, number>;
 }
 
+export interface CloudWatchAlarmContext {
+  alarm_name?: string | null;
+  state?: string | null;
+  reason?: string | null;
+  metric_name?: string | null;
+  namespace?: string | null;
+  statistic?: string | null;
+  threshold?: number | null;
+  period?: number | null;
+}
+
 export interface InvestigateContext {
   deploy_sha?: string | null;
   log_snippet?: string | null;
@@ -47,6 +58,7 @@ export interface InvestigateContext {
   run_id?: string | null;
   task_name?: string | null;
   severity?: Severity | null;
+  cloudwatch_alarm?: CloudWatchAlarmContext | null;
 }
 
 export interface InvestigateRequest {

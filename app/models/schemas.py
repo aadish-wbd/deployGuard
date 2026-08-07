@@ -18,8 +18,21 @@ from app.core.limits import (
     MAX_STACK_TRACE_CHARS,
 )
 
-TriggeredBy = Literal["databricks", "ec2", "manual"]
+TriggeredBy = Literal["databricks", "ec2", "manual", "cloudwatch_alarm"]
 Severity = Literal["low", "medium", "high", "critical"]
+
+
+class CloudWatchAlarmContext(BaseModel):
+    """CloudWatch alarm metadata forwarded by SNS→Lambda."""
+
+    alarm_name: Optional[str] = Field(default=None, max_length=256)
+    state: Optional[str] = Field(default=None, max_length=32)
+    reason: Optional[str] = Field(default=None, max_length=512)
+    metric_name: Optional[str] = Field(default=None, max_length=128)
+    namespace: Optional[str] = Field(default=None, max_length=128)
+    statistic: Optional[str] = Field(default=None, max_length=32)
+    threshold: Optional[float] = None
+    period: Optional[int] = None
 
 
 class InvestigateContext(BaseModel):
@@ -33,6 +46,7 @@ class InvestigateContext(BaseModel):
     task_name: Optional[str] = None
     severity: Optional[Severity] = None
     notebook_context: Optional[str] = Field(default=None, max_length=MAX_NOTEBOOK_CONTEXT_CHARS)
+    cloudwatch_alarm: Optional[CloudWatchAlarmContext] = None
 
 
 class InvestigateRequest(BaseModel):

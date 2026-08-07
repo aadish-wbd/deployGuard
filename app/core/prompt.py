@@ -38,5 +38,15 @@ def build_agent_input(request: InvestigateRequest) -> str:
         if ctx.notebook_context:
             lines.append("notebook:")
             lines.append(ctx.notebook_context)
+        if ctx.cloudwatch_alarm:
+            alarm = ctx.cloudwatch_alarm
+            if alarm.alarm_name:
+                lines.append(f"cloudwatch_alarm: {alarm.alarm_name}")
+            if alarm.metric_name:
+                stat = alarm.statistic or "Sum"
+                threshold = alarm.threshold if alarm.threshold is not None else "unknown"
+                lines.append(f"cloudwatch_metric: {alarm.metric_name} {stat} threshold={threshold}")
+            if alarm.reason:
+                lines.append(f"cloudwatch_reason: {alarm.reason}")
 
     return "\n".join(lines)
