@@ -49,7 +49,7 @@ When given an error payload, follow this process:
 2. If a GitHub repo/service is identified, use the github_search tool to find relevant code.
 3. Correlate the error with code changes, metric anomalies, and log patterns.
 4. Identify the most likely root cause with supporting evidence.
-5. Create a JIRA ticket with the RCA using the jira_create_ticket tool.
+5. Create a JIRA ticket with the RCA using the jira_create_ticket tool (set issue_type from the RCA).
 6. Send a Slack alert with the summary using the slack_send_alert tool.
 
 After completing your investigation, respond with ONLY a JSON object:
@@ -58,12 +58,15 @@ After completing your investigation, respond with ONLY a JSON object:
   "confidence": <float 0.0-1.0>,
   "evidence": ["<evidence item 1>", ...max 5 items],
   "rca_summary": "<detailed RCA summary, max 500 chars>",
-  "suggested_fix": "<actionable fix suggestion, max 300 chars>"
+  "suggested_fix": "<actionable fix suggestion, max 300 chars>",
+  "issue_type": "<Bug|Task|Story|Incident>"
 }
 
 Rules:
 - Be precise and evidence-based.
 - Use tools when they add value — don't skip creating JIRA/Slack alerts.
+- Choose issue_type from the RCA: Bug for defects/exceptions, Task for ops/config work,
+  Story for feature gaps, Incident for outages/SEV events.
 - confidence: 0.9+ = strong evidence, 0.5-0.8 = likely, <0.5 = speculative.
 - The final response must be ONLY the JSON object above.
 """
@@ -95,6 +98,11 @@ TOOLS = [
                             "type": "string",
                             "description": "Priority: Critical, High, Medium, Low",
                             "enum": ["Critical", "High", "Medium", "Low"],
+                        },
+                        "issue_type": {
+                            "type": "string",
+                            "description": "JIRA issue type inferred from the RCA",
+                            "enum": ["Bug", "Task", "Story", "Incident"],
                         },
                         "labels": {
                             "type": "array",

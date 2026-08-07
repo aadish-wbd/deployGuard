@@ -15,9 +15,9 @@ git_branch   = "main"
 
 enable_jira = true
 enable_slack = true
-jira_base_url    = "https://saikiran-44306429.atlassian.net"
+jira_base_url    = "https://wbdprod.atlassian.net"
 jira_cloud_id    = "d753fdd1-6314-4b7a-b78d-58e0a982afc7"
-jira_project_key = "KAN"
+jira_project_key = "UA"
 jira_issue_type  = "Task"
 slack_channel    = "#hackathon"
 

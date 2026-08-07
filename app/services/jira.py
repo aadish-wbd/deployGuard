@@ -29,6 +29,69 @@ _SEVERITY_TO_PRIORITY = {
     "low": "Low",
 }
 
+_COMMON_ISSUE_TYPES = ("Bug", "Task", "Story", "Incident", "Sub-task")
+
+_BUG_SIGNALS = (
+    "exception",
+    "error",
+    "nullpointer",
+    "null pointer",
+    "bug",
+    "regression",
+    "crash",
+    "stack trace",
+    "500 internal",
+    "503 service",
+    "timeout",
+    "failed to",
+    "cannot ",
+    "broken",
+    "defect",
+)
+
+_INCIDENT_SIGNALS = (
+    "outage",
+    "sev-",
+    "sev ",
+    "production down",
+    "major incident",
+    "service unavailable",
+)
+
+_STORY_SIGNALS = (
+    "missing feature",
+    "feature gap",
+    "not implemented",
+    "enhancement",
+)
+
+
+def _normalize_issue_type(name: str) -> str:
+    cleaned = name.strip()
+    if not cleaned:
+        return ""
+    for allowed in _COMMON_ISSUE_TYPES:
+        if cleaned.lower() == allowed.lower():
+            return allowed
+    return cleaned
+
+
+def _derive_issue_type(rca: BedrockRcaOutput, settings: Settings) -> str:
+    """Pick a JIRA issue type from agent output, with heuristic fallback."""
+    if rca.issue_type:
+        normalized = _normalize_issue_type(rca.issue_type)
+        if normalized:
+            return normalized
+
+    text = f"{rca.root_cause} {rca.rca_summary} {rca.suggested_fix}".lower()
+    if any(signal in text for signal in _INCIDENT_SIGNALS):
+        return "Incident"
+    if any(signal in text for signal in _BUG_SIGNALS):
+        return "Bug"
+    if any(signal in text for signal in _STORY_SIGNALS):
+        return "Story"
+    return settings.jira_issue_type
+
 
 def _derive_priority(request: InvestigateRequest, confidence: float) -> str:
     severity = request.context.severity if request.context else None
@@ -297,20 +360,43 @@ class JiraClient:
         description: dict,
         priority: Optional[str],
         labels: list[str],
+        issue_type: Optional[str] = None,
     ) -> tuple[str, str]:
         settings = self._settings
+        primary_type = issue_type or settings.jira_issue_type
         attempts: list[dict[str, Any]] = [
-            self._build_fields(summary=summary, description=description, priority=priority, labels=labels),
+            self._build_fields(
+                summary=summary,
+                description=description,
+                priority=priority,
+                labels=labels,
+                issue_type=primary_type,
+            ),
         ]
 
         if settings.jira_set_priority and priority:
             no_priority = self._build_fields(
-                summary=summary, description=description, priority=None, labels=labels
+                summary=summary,
+                description=description,
+                priority=None,
+                labels=labels,
+                issue_type=primary_type,
             )
             if no_priority not in attempts:
                 attempts.append(no_priority)
 
-        if settings.jira_issue_type.lower() != "task":
+        if primary_type.lower() != settings.jira_issue_type.lower():
+            default_type_fields = self._build_fields(
+                summary=summary,
+                description=description,
+                priority=None,
+                labels=labels,
+                issue_type=settings.jira_issue_type,
+            )
+            if default_type_fields not in attempts:
+                attempts.append(default_type_fields)
+
+        if primary_type.lower() != "task" and settings.jira_issue_type.lower() != "task":
             task_fields = self._build_fields(
                 summary=summary,
                 description=description,
@@ -377,12 +463,14 @@ class JiraClient:
 
     def create_ticket(self, request: InvestigateRequest, rca: BedrockRcaOutput) -> tuple[str, str]:
         summary = f"[{request.service}] {rca.root_cause}"[:255]
+        issue_type = _derive_issue_type(rca, self._settings)
         try:
             ticket_key, ticket_url = self._create_issue_with_fallbacks(
                 summary=summary,
                 description=_build_description(rca),
                 priority=_derive_priority(request, rca.confidence),
                 labels=_issue_labels(request),
+                issue_type=issue_type,
             )
         except JiraError:
             raise
@@ -409,7 +497,12 @@ class JiraClient:
                 logger.exception("jira_add_watcher_failed", extra={"ticket_key": ticket_key, "account_id": account_id})
 
     def create_ticket_raw(
-        self, summary: str, description: str, priority: str = "Medium", labels: list[str] | None = None
+        self,
+        summary: str,
+        description: str,
+        priority: str = "Medium",
+        labels: list[str] | None = None,
+        issue_type: str | None = None,
     ) -> tuple[str, str]:
         """Create a JIRA ticket from raw parameters (used by AgentCore tool executor)."""
         try:
@@ -418,6 +511,7 @@ class JiraClient:
                 description=plain_text_to_adf(description),
                 priority=priority,
                 labels=labels or ["deployguard"],
+                issue_type=issue_type,
             )
         except JiraError:
             raise

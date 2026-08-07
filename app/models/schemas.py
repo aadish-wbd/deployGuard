@@ -67,6 +67,11 @@ class BedrockRcaOutput(BaseModel):
     evidence: List[str] = Field(default_factory=list, max_length=5)
     rca_summary: str = Field(..., max_length=500)
     suggested_fix: str = Field(default="", max_length=300)
+    issue_type: Optional[str] = Field(
+        default=None,
+        max_length=30,
+        description="JIRA issue type inferred from the RCA (e.g. Bug, Task, Story, Incident)",
+    )
 
     @model_validator(mode="before")
     @classmethod

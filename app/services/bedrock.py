@@ -34,6 +34,11 @@ When given an error payload, follow this process:
 1. Analyze the error message, stack trace, and any provided context.
 2. Correlate the error with the deploy SHA, metric anomalies, and log patterns.
 3. Identify the most likely root cause with supporting evidence.
+4. Choose the best JIRA issue type for the RCA:
+   - Bug: code defects, exceptions, regressions, failed requests
+   - Task: operational work, config/deployment changes, runbook steps
+   - Story: missing feature capability or product gap (not a defect)
+   - Incident: production outage or SEV event affecting users
 
 IMPORTANT — Output Format:
 You MUST respond with ONLY a JSON object matching this exact schema:
@@ -42,12 +47,14 @@ You MUST respond with ONLY a JSON object matching this exact schema:
   "confidence": <float 0.0-1.0>,
   "evidence": ["<evidence item 1>", ...max 5 items],
   "rca_summary": "<detailed RCA summary, max 500 chars>",
-  "suggested_fix": "<actionable fix suggestion, max 300 chars>"
+  "suggested_fix": "<actionable fix suggestion, max 300 chars>",
+  "issue_type": "<Bug|Task|Story|Incident>"
 }
 
 Rules:
 - Be precise and evidence-based. Cite specific files, functions, metric values.
 - confidence: 0.9+ = strong evidence, 0.5-0.8 = likely, <0.5 = speculative.
+- issue_type must reflect the RCA, not default to Task when the failure is a defect.
 - Respond with ONLY the JSON object. No other text.
 """
 
@@ -67,6 +74,11 @@ HARNESS_TOOLS = [
                         "summary": {"type": "string", "description": "Ticket summary"},
                         "description": {"type": "string", "description": "Full RCA description"},
                         "priority": {"type": "string", "enum": ["Critical", "High", "Medium", "Low"]},
+                        "issue_type": {
+                            "type": "string",
+                            "enum": ["Bug", "Task", "Story", "Incident"],
+                            "description": "JIRA issue type inferred from the RCA",
+                        },
                         "labels": {"type": "array", "items": {"type": "string"}},
                     },
                     "required": ["summary", "description"],
@@ -120,8 +132,9 @@ and search GitHub code.
 When given an error payload:
 1. Analyze the error message, stack trace, and context.
 2. If a repo/service is identified, use github_search to find relevant code.
-3. Identify the root cause with evidence.
-4. Create a JIRA ticket with the RCA using jira_create_ticket.
+3. Identify the root cause with evidence and choose the best JIRA issue type:
+   Bug (defect/exception), Task (ops/config), Story (feature gap), Incident (outage/SEV).
+4. Create a JIRA ticket with the RCA using jira_create_ticket (include issue_type).
 5. Send a Slack alert using slack_send_alert.
 
 After completing tools, respond with ONLY a JSON object:
@@ -130,7 +143,8 @@ After completing tools, respond with ONLY a JSON object:
   "confidence": <float 0.0-1.0>,
   "evidence": ["<evidence item 1>", ...max 5 items],
   "rca_summary": "<detailed RCA summary, max 500 chars>",
-  "suggested_fix": "<actionable fix suggestion, max 300 chars>"
+  "suggested_fix": "<actionable fix suggestion, max 300 chars>",
+  "issue_type": "<Bug|Task|Story|Incident>"
 }
 """
 
@@ -170,6 +184,7 @@ class ToolExecutor:
                 description=params.get("description", ""),
                 priority=params.get("priority", "Medium"),
                 labels=params.get("labels", []),
+                issue_type=params.get("issue_type"),
             )
             return {"ticket_key": ticket_key, "url": ticket_url}
         except Exception as exc:

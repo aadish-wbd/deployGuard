@@ -6,6 +6,7 @@ from app.models.schemas import InvestigateRequest
 from app.services.jira import (
     JiraClient,
     _build_description,
+    _derive_issue_type,
     _issue_labels,
     plain_text_to_adf,
     resolve_jira_rest_base,
@@ -38,6 +39,7 @@ def test_build_description_returns_adf_doc():
         evidence=["log line 1", "log line 2"],
         rca_summary="Missing env var in production.",
         suggested_fix="Restore PAYMENT_URL in config.",
+        issue_type="Bug",
     )
 
     doc = _build_description(rca)
@@ -106,3 +108,87 @@ def test_find_existing_ticket_uses_search_jql_endpoint(mock_get):
     assert found.jira_ticket == "KAN-25"
     assert mock_get.call_count == 1
     assert "/rest/api/3/search/jql" in mock_get.call_args.args[0]
+
+
+def test_derive_issue_type_uses_agent_output():
+    from app.models.schemas import BedrockRcaOutput
+
+    settings = Settings(jira_issue_type="Task")
+    rca = BedrockRcaOutput(
+        root_cause="Config drift",
+        confidence=0.7,
+        evidence=[],
+        rca_summary="Rotate credentials manually.",
+        suggested_fix="Update secret.",
+        issue_type="Task",
+    )
+
+    assert _derive_issue_type(rca, settings) == "Task"
+
+
+def test_derive_issue_type_heuristic_bug():
+    from app.models.schemas import BedrockRcaOutput
+
+    settings = Settings(jira_issue_type="Task")
+    rca = BedrockRcaOutput(
+        root_cause="NullPointerException in PaymentHandler",
+        confidence=0.9,
+        evidence=["stack trace"],
+        rca_summary="Unhandled null reference caused 500 errors.",
+        suggested_fix="Add null check.",
+    )
+
+    assert _derive_issue_type(rca, settings) == "Bug"
+
+
+def test_derive_issue_type_heuristic_incident():
+    from app.models.schemas import BedrockRcaOutput
+
+    settings = Settings(jira_issue_type="Task")
+    rca = BedrockRcaOutput(
+        root_cause="Database cluster unavailable",
+        confidence=0.95,
+        evidence=["health checks failing"],
+        rca_summary="Production outage affecting all users.",
+        suggested_fix="Fail over to replica.",
+    )
+
+    assert _derive_issue_type(rca, settings) == "Incident"
+
+
+@patch("app.services.jira.httpx.post")
+def test_create_ticket_uses_rca_issue_type(mock_post):
+    from app.models.schemas import BedrockRcaOutput
+
+    mock_response = MagicMock()
+    mock_response.is_success = True
+    mock_response.json.return_value = {"key": "UA-42"}
+    mock_post.return_value = mock_response
+
+    settings = Settings(
+        jira_base_url="https://example.atlassian.net",
+        jira_email="user@example.com",
+        jira_api_token="token",
+        jira_project_key="UA",
+        jira_issue_type="Task",
+    )
+    request = InvestigateRequest(
+        error_message="NullPointerException: PAYMENT_URL is null",
+        service="payment-api",
+        environment="production",
+    )
+    rca = BedrockRcaOutput(
+        root_cause="NullPointerException in handler",
+        confidence=0.9,
+        evidence=["PaymentHandler.java:42"],
+        rca_summary="Missing env var caused NPE.",
+        suggested_fix="Restore env var.",
+        issue_type="Bug",
+    )
+
+    ticket_key, ticket_url = JiraClient(settings).create_ticket(request, rca)
+
+    assert ticket_key == "UA-42"
+    assert ticket_url.endswith("/browse/UA-42")
+    payload = mock_post.call_args.kwargs["json"]["fields"]
+    assert payload["issuetype"]["name"] == "Bug"
