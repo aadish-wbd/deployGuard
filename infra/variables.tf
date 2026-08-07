@@ -75,6 +75,12 @@ variable "git_branch" {
   default     = "main"
 }
 
+variable "github_default_repo" {
+  description = "Default owner/repo for AgentCore github_search during RCA"
+  type        = string
+  default     = "aadish-wbd/deployGuard"
+}
+
 variable "enable_jira" {
   description = "Enable JIRA integration in the app"
   type        = bool

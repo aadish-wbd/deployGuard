@@ -159,7 +159,7 @@ async def execute_investigation(
     investigation_id = str(uuid.uuid4())
     started_at = time.monotonic()
 
-    input_text = build_agent_input(payload)
+    input_text = build_agent_input(payload, github_default_repo=settings.github_default_repo)
     token_estimate = estimate_tokens(input_text)
     if token_estimate > settings.max_input_tokens_estimate:
         raise HTTPException(

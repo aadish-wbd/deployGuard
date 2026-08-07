@@ -19,6 +19,7 @@ from app.core.logging_config import configure_logging, get_logger
 from app.core.rate_limit import DailyCap
 from app.services.bedrock import BedrockAgentClient
 from app.services.databricks import DatabricksClient
+from app.services.github import GitHubClient
 from app.services.jira import JiraClient, validate_jira_config
 from app.services.postgres_store import PostgresIncidentStore
 from app.services.s3_store import S3IncidentStore
@@ -51,10 +52,12 @@ async def lifespan(app: FastAPI):
 
     app.state.jira_client = JiraClient(settings)
     app.state.slack_client = SlackClient(settings)
+    app.state.github_client = GitHubClient(settings)
     app.state.bedrock_client = BedrockAgentClient(
         settings,
         jira_client=app.state.jira_client,
         slack_client=app.state.slack_client,
+        github_client=app.state.github_client,
     )
     app.state.s3_store = S3IncidentStore(settings)
     app.state.postgres_store = PostgresIncidentStore(settings) if settings.postgres_enabled else None

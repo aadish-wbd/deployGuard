@@ -20,6 +20,7 @@ from app.config import Settings
 from app.core.logging_config import get_logger
 from app.core.retry import retry_with_backoff
 from app.models.schemas import BedrockRcaOutput
+from app.services.github import GitHubError
 
 logger = get_logger(__name__)
 
@@ -131,7 +132,7 @@ and search GitHub code.
 
 When given an error payload:
 1. Analyze the error message, stack trace, and context.
-2. If a repo/service is identified, use github_search to find relevant code.
+2. If a repo/service is identified, use github_search to find relevant code (pass repo as owner/name when known).
 3. Identify the root cause with evidence and choose the best JIRA issue type:
    Bug (defect/exception), Task (ops/config), Story (feature gap), Incident (outage/SEV).
 4. Create a JIRA ticket with the RCA using jira_create_ticket (include issue_type).
@@ -160,9 +161,10 @@ class ThrottlingError(Exception):
 class ToolExecutor:
     """Executes inline function tool calls using the app's service clients."""
 
-    def __init__(self, jira_client=None, slack_client=None):
+    def __init__(self, jira_client=None, slack_client=None, github_client=None):
         self._jira = jira_client
         self._slack = slack_client
+        self._github = github_client
 
     def execute(self, tool_name: str, tool_input: dict) -> dict:
         """Execute a tool and return the result."""
@@ -206,22 +208,26 @@ class ToolExecutor:
             return {"error": str(exc)}
 
     def _exec_github(self, params: dict) -> dict:
-        # GitHub search — simplified for now, returns guidance
-        query = params.get("query", "")
-        repo = params.get("repo", "")
-        return {
-            "status": "search_complete",
-            "query": query,
-            "repo": repo,
-            "results": f"Code search for '{query}' in {repo or 'all repos'} — "
-                       f"relevant context should be provided in the error payload.",
-        }
+        if not self._github:
+            return {"status": "skipped", "reason": "GitHub not configured"}
+        try:
+            return self._github.search_code(
+                query=params.get("query", ""),
+                repo=params.get("repo") or None,
+            )
+        except GitHubError as exc:
+            logger.warning("github_tool_failed", extra={"error": str(exc)})
+            return {"status": "error", "error": str(exc)}
 
 
 class BedrockAgentClient:
-    def __init__(self, settings: Settings, jira_client=None, slack_client=None):
+    def __init__(self, settings: Settings, jira_client=None, slack_client=None, github_client=None):
         self._settings = settings
-        self._tool_executor = ToolExecutor(jira_client=jira_client, slack_client=slack_client)
+        self._tool_executor = ToolExecutor(
+            jira_client=jira_client,
+            slack_client=slack_client,
+            github_client=github_client,
+        )
 
         if settings.agentcore_harness_arn:
             self._agentcore_client = boto3.client(

@@ -14,6 +14,7 @@ JIRA_BASE_URL=${jira_base_url}
 JIRA_CLOUD_ID=${jira_cloud_id}
 JIRA_PROJECT_KEY=${jira_project_key}
 JIRA_ISSUE_TYPE=${jira_issue_type}
+GITHUB_DEFAULT_REPO=${github_default_repo}
 SLACK_CHANNEL=${slack_channel}
 ENABLE_DATABRICKS=${enable_databricks}
 DATABRICKS_HOST=${databricks_host}

@@ -50,6 +50,7 @@ class Settings(BaseSettings):
 
     # --- GitHub (optional — AgentCore github_search tool) ---
     github_token: str = ""
+    github_default_repo: str = ""
 
     # --- PostgreSQL (dashboard store) ---
     pghost: Optional[str] = None

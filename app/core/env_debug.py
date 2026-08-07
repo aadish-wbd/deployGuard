@@ -22,6 +22,7 @@ _TRACKED_ENV_KEYS = (
     "SLACK_CHANNEL",
     "SLACK_BOT_TOKEN",
     "GITHUB_TOKEN",
+    "GITHUB_DEFAULT_REPO",
 )
 
 
@@ -77,6 +78,10 @@ def print_loaded_config(
     print(f"SLACK_CHANNEL: {settings.slack_channel} [{_env_source('SLACK_CHANNEL')}]")
     print(f"SLACK_BOT_TOKEN: {_mask(settings.slack_bot_token)} [{_env_source('SLACK_BOT_TOKEN')}]")
     print(f"GITHUB_TOKEN: {_mask(settings.github_token)} [{_env_source('GITHUB_TOKEN')}]")
+    print(
+        f"GITHUB_DEFAULT_REPO: {settings.github_default_repo or '(not set)'}"
+        f" [{_env_source('GITHUB_DEFAULT_REPO')}]"
+    )
 
     stale = [key for key in _TRACKED_ENV_KEYS if key in os.environ]
     if stale:

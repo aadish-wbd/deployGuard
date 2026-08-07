@@ -24,6 +24,7 @@ resource "aws_instance" "app" {
       jira_cloud_id               = var.jira_cloud_id
       jira_project_key            = var.jira_project_key
       jira_issue_type             = var.jira_issue_type
+      github_default_repo         = var.github_default_repo
       slack_channel               = var.slack_channel
       enable_databricks           = var.enable_databricks
       databricks_host             = var.databricks_host
